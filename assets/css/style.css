@@ -286,11 +286,13 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .req--bad { background: var(--coral); color: var(--white); }
 .req .dot { box-shadow: 0 0 0 1px rgb(255 255 255 / 70%); }
 
-.group .dropzone { flex: 1; padding: 6px; min-height: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-content: start; }
+.group .dropzone { flex: 1; padding: 6px; min-height: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 0; align-content: start; }
 .group .dropzone:empty { display: flex; }
-.col { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
-.col--d { align-items: flex-end; }
-.col--x { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+/* Homes i dones s'ajunten al centre, separats per una línia, sense espai mort al mig. */
+.col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.col--h { align-items: flex-end; padding-right: 6px; }
+.col--d { align-items: flex-start; padding-left: 6px; border-left: 1.5px dashed var(--line); }
+.col--x { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; justify-content: center; }
 
 .group--conflict { border-color: var(--red); box-shadow: 0 8px 24px rgb(198 47 47 / 18%); }
 .group--conflict .meter span { background: var(--red); }
