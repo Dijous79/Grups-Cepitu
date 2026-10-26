@@ -317,6 +317,8 @@ p { margin: 0 0 1em; text-wrap: pretty; }
   content: attr(data-empty);
   color: var(--ink-soft); font-size: .82rem; font-weight: 600; opacity: .7;
   padding: 4px;
+  /* Una sola línia: «Toca per posar-hi …» no ha de fer créixer el grup i moure la pàgina. */
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .dropzone.is-over { background: var(--green-100); outline-color: var(--green-500); }
 .group:has(.dropzone.is-over) { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
@@ -540,5 +542,7 @@ body.is-picking .group:hover .dropzone { background: var(--cream-soft); }
   background: var(--green-100); color: var(--green-900);
   font-size: 1.3rem; line-height: 1; cursor: pointer;
 }
-body.is-picking main { padding-bottom: 130px; }
+/* Espai fix per a la fitxa: si només hi fos amb un monitor triat, en tancar-la la pàgina
+   s'escurçaria i el navegador pujaria l'scroll. */
+main { padding-bottom: 130px; }
 body.is-picking .toast { bottom: calc(130px + env(safe-area-inset-bottom)); }
