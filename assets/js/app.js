@@ -33,7 +33,7 @@
   const DROPPED = ["Geis"];
 
   // Carnets (c = conduir, m = monitor, d = director) i preferències de cada monitor.
-  // De moment les preferències només es guarden i es mostren; no s'apliquen enlloc.
+  // Les preferències es mostren quan es toca un monitor; no s'apliquen enlloc.
   const DEFAULT_INFO = {
     "MC": ["c"],
     "Chali": ["mc"],
@@ -518,8 +518,27 @@
     $("#rules-count").textContent = state.rules.length + state.placeRules.length;
     rulesBtn.classList.toggle("has-conflict", nConf > 0);
 
+    renderPicked();
     if ($("#dlg-rules").open) renderRules();
     if ($("#dlg-people").open) renderPeople();
+  }
+
+  // Fitxa de baix amb els carnets i les preferències del monitor triat.
+  function renderPicked() {
+    const box = $("#picked");
+    box.hidden = !selected;
+    if (!selected) return;
+    const info = state.info[selected] || defaultInfo(selected);
+    const meta = [
+      ...CARNETS.filter((c) => info.carnets.includes(c.key)).map((c) => c.label),
+      ...TRAITS.filter((t) => info[t.key]).map((t) => t.label),
+    ];
+    if (info.year) meta.unshift(info.year);
+    $("#picked-name").textContent = selected;
+    $("#picked-meta").textContent = meta.join(" · ");
+    const prefs = $("#picked-prefs");
+    prefs.textContent = info.prefs ? "Preferències: " + info.prefs : "Sense preferències";
+    prefs.classList.toggle("muted", !info.prefs);
   }
 
   function announceMove(name, to) {
@@ -684,7 +703,7 @@
 
   document.addEventListener("click", (e) => {
     if (Date.now() < suppressClickUntil) return;
-    if (e.target.closest("dialog, .toolbar")) return;
+    if (e.target.closest("dialog, .toolbar, .picked")) return;
     const node = e.target.closest(".chip");
     const holder = e.target.closest(".group, .pool");
     const target = holder && holder.querySelector("[data-drop]").dataset.drop;
@@ -701,6 +720,8 @@
     if (holder) placeSelected(target);
     else { selected = null; render(); }
   });
+
+  $("#picked-close").addEventListener("click", () => { selected = null; render(); });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && selected && !document.querySelector("dialog[open]")) { selected = null; render(); }
