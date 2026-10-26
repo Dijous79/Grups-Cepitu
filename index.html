@@ -33,11 +33,7 @@
       </button>
       <button class="btn btn--sm btn--green" type="button" id="btn-auto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-        Reparteix
-      </button>
-      <button class="btn btn--sm btn--line" type="button" id="btn-export">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
-        Comparteix
+        Random
       </button>
       <button class="btn btn--sm btn--line" type="button" id="btn-people">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></svg>
@@ -94,18 +90,6 @@
     </form>
     <ul class="people-list" id="people-list"></ul>
     <button class="link-btn" type="button" id="btn-defaults">Restaura la llista original de monitors</button>
-  </dialog>
-
-  <dialog class="sheet" id="dlg-export" aria-labelledby="dlg-export-title">
-    <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
-    <h2 id="dlg-export-title">Comparteix</h2>
-    <pre class="export" id="export-text"></pre>
-    <div class="btn-row">
-      <button class="btn btn--sm" type="button" id="btn-copy-text">Copia el text</button>
-      <button class="btn btn--sm btn--green" type="button" id="btn-copy-link">Copia l'enllaç</button>
-      <button class="btn btn--sm btn--line" type="button" id="btn-share" hidden>Envia…</button>
-    </div>
-    <p class="muted small">L'enllaç porta aquesta distribució i les restriccions: qui l'obri la veurà igual.</p>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

@@ -433,11 +433,6 @@ select:focus, input[type="text"]:focus { border-color: var(--green-500); outline
 .carnet[aria-pressed="true"] { border-color: var(--green-500); background: var(--green-100); color: var(--green-900); }
 .carnet[aria-pressed="true"] .dot { opacity: 1; }
 
-.export {
-  background: var(--paper); border-radius: var(--radius-sm); padding: 14px 16px;
-  font-family: var(--font-body); font-size: .92rem; white-space: pre-wrap;
-  max-height: 46vh; overflow: auto; margin: 0;
-}
 
 /* ---------- Avís ---------- */
 

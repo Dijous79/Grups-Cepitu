@@ -26,7 +26,7 @@
     "Ton", "Erica", "MartinaBo", "AinaCo", "Lucas", "Pauri", "MartinaFo", "Anglarill", "Herruzo", "Dani",
   ];
 
-  // Noms que han canviat respecte de versions antigues (dades desades o enllaços).
+  // Noms que han canviat respecte de versions antigues de les dades desades.
   // "Geis" s'esborra perquè "Q." i "Geis" eren la mateixa persona: "Q. Geis".
   const RENAMES = { "Q.": "Q. Geis", "AinCo": "AinaCo" };
   const DROPPED = ["Geis"];
@@ -154,7 +154,7 @@
     return { people, groups, rules, info };
   }
 
-  // Adapta dades desades o enllaços de versions antigues (vegeu RENAMES i DROPPED).
+  // Adapta dades desades de versions antigues (vegeu RENAMES i DROPPED).
   function migrate(s) {
     const people = s.people || [];
     const stale = people.filter((n) => (RENAMES[n] && !people.includes(RENAMES[n])) || (DROPPED.includes(n) && people.includes("Q.")));
@@ -285,12 +285,6 @@
     const ya = (state.info[a] || {}).year || 9999;
     const yb = (state.info[b] || {}).year || 9999;
     return ya - yb || a.localeCompare(b, "ca");
-  }
-
-  // Per al text de Comparteix: primer homes, després dones, després els sense dades.
-  function bySexThenAge(a, b) {
-    const rank = (n) => { const i = SEXES.indexOf(sexOf(n)); return i === -1 ? 2 : i; };
-    return rank(a) - rank(b) || byAge(a, b);
   }
 
   // Omple una zona de grup amb dues columnes (homes | dones) i, sota, els que no tenen sexe.
@@ -610,7 +604,7 @@
     if (e.key === "Escape" && selected && !document.querySelector("dialog[open]")) { selected = null; render(); }
   });
 
-  /* ---------- Reparteix automàticament ---------- */
+  /* ---------- Random: reparteix automàticament ---------- */
 
   $("#btn-auto").addEventListener("click", () => {
     const pending = [...state.groups[POOL]];
@@ -829,97 +823,6 @@
     commit();
   });
 
-  /* ---------- Comparteix ---------- */
-
-  const dlgExport = $("#dlg-export");
-
-  function exportText() {
-    const { byGroup } = conflicts();
-    const lines = ["*GRUPS DE COLÒNIES · CEPITU*", ""];
-    for (const g of GROUPS) {
-      const m = state.groups[g.id];
-      lines.push(`*${g.id}* (${m.length}/${g.cap})`);
-      const sorted = [...m].sort(bySexThenAge);
-      lines.push(sorted.length ? sorted.join(", ") : "—");
-      for (const r of byGroup.get(g.id) || []) lines.push(`⚠ ${r.a} i ${r.b} no poden anar junts`);
-      lines.push("");
-    }
-    const { missing } = requirements();
-    if (missing.length) lines.push(`*Falten carnets:* ${missing.join(", ")}`, "");
-    if (state.groups[POOL].length) lines.push(`*Sense grup:* ${state.groups[POOL].join(", ")}`);
-    return lines.join("\n").trim();
-  }
-
-  function toBase64Url(str) {
-    const bytes = new TextEncoder().encode(str);
-    let bin = "";
-    for (const b of bytes) bin += String.fromCharCode(b);
-    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  }
-  function fromBase64Url(s) {
-    const bin = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
-    return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
-  }
-
-  function shareLink() {
-    const idx = new Map(state.people.map((n, i) => [n, i]));
-    const data = {
-      p: state.people,
-      g: Object.fromEntries(GROUPS.map((g) => [g.id, state.groups[g.id].map((n) => idx.get(n))])),
-      r: state.rules.map((r) => (r.note ? [idx.get(r.a), idx.get(r.b), r.note] : [idx.get(r.a), idx.get(r.b)])),
-      i: state.people.map((n) => [state.info[n].carnets, state.info[n].prefs, state.info[n].sex, state.info[n].year]),
-    };
-    return location.origin + location.pathname + "#d=" + toBase64Url(JSON.stringify(data));
-  }
-
-  function readLink() {
-    if (!location.hash.startsWith("#d=")) return;
-    try {
-      const d = JSON.parse(fromBase64Url(location.hash.slice(3)));
-      const p = d.p;
-      const groups = Object.fromEntries(Object.entries(d.g || {}).map(([k, l]) => [k, l.map((i) => p[i])]));
-      const rules = (d.r || []).map(([a, b, note]) => (note ? { a: p[a], b: p[b], note } : { a: p[a], b: p[b] }));
-      const info = d.i ? Object.fromEntries(p.map((n, i) => {
-        const [carnets, prefs, sex, year] = d.i[i] || [];
-        return [n, sex === undefined ? { carnets, prefs } : { carnets, prefs, sex, year }];
-      })) : undefined;
-      const incoming = normalize(migrate({ people: p, groups, rules, info }));
-      const hasLocal = state.people.length !== state.groups[POOL].length || state.rules.length;
-      if (!hasLocal || confirm("Has obert un enllaç amb una distribució de grups. Vols carregar-la? Substituirà la que tens ara en aquest dispositiu.")) {
-        state = incoming;
-        save();
-      }
-    } catch {
-      toast("L'enllaç no és vàlid", true);
-    }
-    history.replaceState(null, "", location.pathname + location.search);
-  }
-
-  async function copy(text, msg) {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const ta = el("textarea", { value: text });
-      ta.style.cssText = "position:fixed;opacity:0";
-      dlgExport.append(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-    }
-    toast(msg);
-  }
-
-  $("#btn-export").addEventListener("click", () => {
-    $("#export-text").textContent = exportText();
-    $("#btn-share").hidden = !navigator.share;
-    dlgExport.showModal();
-  });
-  $("#btn-copy-text").addEventListener("click", () => copy(exportText(), "Text copiat — enganxa'l al WhatsApp"));
-  $("#btn-copy-link").addEventListener("click", () => copy(shareLink(), "Enllaç copiat"));
-  $("#btn-share").addEventListener("click", () => {
-    navigator.share({ title: "Grups de colònies · Cepitu", text: exportText() + "\n\n" + shareLink() }).catch(() => {});
-  });
-
   // Tanca els diàlegs tocant el fons.
   for (const d of document.querySelectorAll("dialog")) {
     d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
@@ -937,6 +840,5 @@
     toastTimer = setTimeout(() => t.classList.remove("is-on"), bad ? 3600 : 2400);
   }
 
-  readLink();
   render();
 })();
