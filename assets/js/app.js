@@ -9,7 +9,7 @@
 
   const GROUPS = [
     { id: "PETITS", cap: 6, img: "petits.jpg" },
-    { id: "MITJANS", cap: 7, img: "mitjans.jpg" },
+    { id: "MITJANS", cap: 6, img: "mitjans.jpg" },
     { id: "GRANS", cap: 7, img: "grans.jpg" },
     { id: "K1", cap: 7, img: "k1.jpg" },
     { id: "K2", cap: 7, img: "k2.jpg" },
@@ -17,7 +17,7 @@
   ];
 
   const DEFAULT_PEOPLE = [
-    "MC", "Chali", "Inyi", "Tondes", "Bru", "Eli", "Riki", "Ro", "Q.", "Geis",
+    "MC", "Chali", "Inyi", "Tondes", "Bru", "Eli", "Riki", "Ro", "Q. Geis",
     "Muli", "Paupo", "Ani", "Benet", "Qwerty", "Neus", "Santi", "Quimpu", "Quimta", "Cris",
     "Ivet", "Berta", "Marvi", "Biel", "AinaBo", "Max", "T. Forre", "Judit", "Vicen", "Bellau",
     "Ton", "Erica", "MartinaBo", "AinCo", "Lucas", "Pauri", "MartinaFo", "Anglarill", "Herruzo", "Dani",
@@ -59,10 +59,23 @@
     return { people, groups, rules };
   }
 
+  // Versions antigues tenien "Q." i "Geis" com a dos monitors: és una sola persona.
+  function migrate(s) {
+    const people = s.people || [];
+    if (!people.includes("Q.") || !people.includes("Geis") || people.includes("Q. Geis")) return s;
+    const fix = (n) => (n === "Q." ? "Q. Geis" : n);
+    const drop = (n) => n !== "Geis";
+    return {
+      people: people.filter(drop).map(fix),
+      groups: Object.fromEntries(Object.entries(s.groups || {}).map(([k, l]) => [k, l.filter(drop).map(fix)])),
+      rules: (s.rules || []).filter((r) => drop(r.a) && drop(r.b)).map((r) => ({ ...r, a: fix(r.a), b: fix(r.b) })),
+    };
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? normalize(JSON.parse(raw)) : null;
+      return raw ? normalize(migrate(JSON.parse(raw))) : null;
     } catch { return null; }
   }
 
@@ -619,7 +632,7 @@
       const p = d.p;
       const groups = Object.fromEntries(Object.entries(d.g || {}).map(([k, l]) => [k, l.map((i) => p[i])]));
       const rules = (d.r || []).map(([a, b, note]) => (note ? { a: p[a], b: p[b], note } : { a: p[a], b: p[b] }));
-      const incoming = normalize({ people: p, groups, rules });
+      const incoming = normalize(migrate({ people: p, groups, rules }));
       const hasLocal = state.people.length !== state.groups[POOL].length || state.rules.length;
       if (!hasLocal || confirm("Has obert un enllaç amb una distribució de grups. Vols carregar-la? Substituirà la que tens ara en aquest dispositiu.")) {
         state = incoming;

@@ -1,7 +1,7 @@
 # Cepitu · Grups de colònies
 
 Eina web (mòbil i ordinador) per repartir els monitors de l'Esplai Cepitu als grups de colònies d'estiu:
-PETITS (6), MITJANS (7), GRANS (7), K1 (7), K2 (7) i RUTA (6).
+PETITS (6), MITJANS (6), GRANS (7), K1 (7), K2 (7) i RUTA (6).
 
 - Arrossega les targetes dels monitors als grups (al mòbil, mantén premut i arrossega, o toca un monitor i tria el grup a la barra inferior).
 - **Restriccions**: parelles que no poden anar juntes. Si coincideixen al mateix grup, es marquen en vermell.
