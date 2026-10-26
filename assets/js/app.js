@@ -280,7 +280,7 @@
     return ya - yb || a.localeCompare(b, "ca");
   }
 
-  // A «Sense grup» van tots seguits: primer homes, després dones, després els sense dades.
+  // Per al text de Comparteix: primer homes, després dones, després els sense dades.
   function bySexThenAge(a, b) {
     const rank = (n) => { const i = SEXES.indexOf(sexOf(n)); return i === -1 ? 2 : i; };
     return rank(a) - rank(b) || byAge(a, b);
@@ -334,7 +334,19 @@
     // Sense grup
     const pool = $("#pool");
     pool.dataset.empty = "Tothom té grup 🎉";
-    pool.replaceChildren(...[...state.groups[POOL]].sort(bySexThenAge).map((n) => chip(n)));
+    // Per any de naixement, amb l'any davant de cada tanda per trobar la gent ràpid.
+    const poolItems = [];
+    let lastYear;
+    for (const n of [...state.groups[POOL]].sort(byAge)) {
+      const y = (state.info[n] || {}).year || null;
+      if (y !== lastYear) {
+        if (poolItems.length) poolItems.push(el("span", { className: "year-break" }));
+        poolItems.push(el("span", { className: "year-tag", textContent: y || "?" }));
+      }
+      lastYear = y;
+      poolItems.push(chip(n));
+    }
+    pool.replaceChildren(...poolItems);
     $("#pool-count").textContent = state.groups[POOL].length;
 
     // Grups
@@ -506,15 +518,16 @@
     if (!zone) return;
     zone.classList.add("is-over");
 
-    // L'ordre és automàtic (sexe i edat): la previsualització posa la targeta on quedarà.
+    // L'ordre és automàtic (sexe i edat als grups, edat a «Sense grup»): la previsualització posa la targeta on quedarà.
     const name = drag.name;
     const isPool = zone.dataset.drop === POOL;
     const box = isPool ? zone : zone.querySelector(".col--" + (sexOf(name) || "x")) || zone;
-    const cmp = isPool ? bySexThenAge : byAge;
     let ref = null;
     for (const c of box.querySelectorAll(":scope > .chip")) {
-      if (c !== drag.node && cmp(name, c.dataset.name) < 0) { ref = c; break; }
+      if (c !== drag.node && byAge(name, c.dataset.name) < 0) { ref = c; break; }
     }
+    // A «Sense grup», no la posis darrere l'etiqueta de l'any següent.
+    if (ref && ref.previousElementSibling?.classList.contains("year-tag")) ref = ref.previousElementSibling;
     if (drag.node.parentElement !== box || drag.node.nextElementSibling !== ref) {
       box.insertBefore(drag.node, ref);
     }
