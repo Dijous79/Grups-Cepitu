@@ -182,7 +182,7 @@ p { margin: 0 0 1em; text-wrap: pretty; }
   max-height: calc(100vh - 68px); display: flex; flex-direction: column;
   border-top: 3px solid var(--cream);
 }
-@media (max-width: 900px) { .pool { position: static; max-height: none; } }
+@media (max-width: 900px) { .pool { position: static; max-height: none; order: 2; } }
 .pool__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .pool__head h2 { font-size: 1rem; }
 .pool__head h2 { margin: 0; }
