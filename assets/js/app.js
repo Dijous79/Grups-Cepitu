@@ -81,6 +81,7 @@
   /* ---------- Estat ---------- */
 
   let state = load() || normalize(freshState(DEFAULT_PEOPLE));
+  let selected = null; // monitor triat amb un toc, pendent de tocar-ne el grup
 
   function freshState(people, rules = [], info = {}) {
     const groups = { [POOL]: [...people] };
@@ -257,6 +258,7 @@
       tip.push(`No pot anar amb ${conflictWith.join(", ")}`);
     }
     node.title = tip.join("\n");
+    if (name === selected) node.classList.add("is-selected");
     node.append(text);
     return node;
   }
@@ -264,6 +266,9 @@
   function render() {
     const { byPerson, byGroup } = conflicts();
     const { byGroup: reqByGroup, missing } = requirements();
+    if (selected && !state.people.includes(selected)) selected = null;
+    const from = selected && groupOf(selected);
+    document.body.classList.toggle("is-picking", !!selected);
 
     // Sense grup
     const pool = $("#pool");
@@ -284,6 +289,11 @@
       if (bad.length) card.classList.add("group--conflict");
       if (n > g.cap) card.classList.add("group--over");
       if (n === g.cap) card.classList.add("group--full");
+      const clash = selected && from !== g.id ? wouldConflict(selected, g.id) : [];
+      if (clash.length) {
+        card.classList.add("group--blocked");
+        card.title = `${selected} no pot anar amb ${clash.join(", ")}`;
+      }
 
       const cap = el("span", { className: "cap" + (status ? " cap--" + status : "") });
       cap.textContent = (bad.length ? "⚠ " : n === g.cap ? "✓ " : "") + `${n}/${g.cap}`;
@@ -291,21 +301,21 @@
 
       const head = el("header", { className: "group__head" },
         el("img", { src: "assets/img/colonies/" + g.img, alt: "", loading: "lazy" }),
-        el("h3", {}, g.id, el("small", { textContent: g.zone === "casa" ? "casa" : "fora" })),
+        el("h3", { textContent: g.id }),
+        el("div", { className: "reqs" }, ...reqByGroup.get(g.id).map((r) =>
+          el("span", { className: "req" + (r.ok ? " req--ok" : " req--bad"), title: r.title },
+            el("i", { className: "dot dot--" + r.key }), r.text))),
         cap,
       );
-      const reqs = el("div", { className: "reqs" }, ...reqByGroup.get(g.id).map((r) =>
-        el("span", { className: "req" + (r.ok ? " req--ok" : " req--bad"), title: r.title },
-          el("i", { className: "dot dot--" + r.key }), r.text)));
       const meter = el("div", { className: "meter" }, el("span"));
       meter.firstChild.style.width = Math.min(100, (n / g.cap) * 100) + "%";
 
       const zone = el("div", { className: "dropzone" });
       zone.dataset.drop = g.id;
-      zone.dataset.empty = "Buit";
+      zone.dataset.empty = selected ? "Toca per posar-hi " + selected : "Buit";
       zone.append(...members.map((m) => chip(m, byPerson.get(m))));
 
-      card.append(head, meter, reqs, zone);
+      card.append(head, meter, zone);
       if (bad.length) {
         card.append(el("ul", { className: "conflicts" }, ...bad.map((r) =>
           el("li", {}, el("span", {},
@@ -353,6 +363,7 @@
   /* ---------- Arrossegar (Pointer Events: ratolí, llapis i tàctil) ---------- */
 
   let drag = null;
+  let suppressClickUntil = 0;
   const LONG_PRESS = 220;
 
   document.addEventListener("pointerdown", (e) => {
@@ -394,6 +405,12 @@
     clearTimeout(drag.timer);
     drag.started = true;
     window.getSelection()?.removeAllRanges();
+    if (selected) {
+      selected = null;
+      document.body.classList.remove("is-picking");
+      document.querySelectorAll(".chip.is-selected").forEach((c) => c.classList.remove("is-selected"));
+      document.querySelectorAll(".group--blocked").forEach((c) => c.classList.remove("group--blocked"));
+    }
 
     const r = drag.node.getBoundingClientRect();
     drag.offX = drag.x0 - r.left;
@@ -456,6 +473,7 @@
     cancelAnimationFrame(drag.raf);
     ghost.remove();
     document.querySelectorAll(".dropzone.is-over").forEach((z) => z.classList.remove("is-over"));
+    suppressClickUntil = Date.now() + 400;
     drag = null;
 
     const zone = node.parentElement;
@@ -473,6 +491,42 @@
     clearTimeout(drag.timer);
     drag = null;
   }
+
+  /* ---------- Tocar i col·locar: toca un monitor i després el grup on va ---------- */
+
+  function placeSelected(to) {
+    const name = selected;
+    selected = null;
+    if (groupOf(name) === to) { render(); return; }
+    move(name, to);
+    announceMove(name, to);
+    commit();
+    flash(name);
+  }
+
+  document.addEventListener("click", (e) => {
+    if (Date.now() < suppressClickUntil) return;
+    if (e.target.closest("dialog, .toolbar")) return;
+    const node = e.target.closest(".chip");
+    const holder = e.target.closest(".group, .pool");
+    const target = holder && holder.querySelector("[data-drop]").dataset.drop;
+
+    if (node && !node.classList.contains("chip--ghost")) {
+      const name = node.dataset.name;
+      // Tocar una targeta d'un altre grup quan ja n'hi ha una de triada la porta allà;
+      // si és del mateix lloc, canvia la selecció (o la treu si és la mateixa).
+      if (selected && name !== selected && target !== groupOf(selected)) placeSelected(target);
+      else { selected = selected === name ? null : name; render(); }
+      return;
+    }
+    if (!selected) return;
+    if (holder) placeSelected(target);
+    else { selected = null; render(); }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && selected && !document.querySelector("dialog[open]")) { selected = null; render(); }
+  });
 
   /* ---------- Reparteix automàticament ---------- */
 

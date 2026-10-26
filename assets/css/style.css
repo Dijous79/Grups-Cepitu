@@ -233,7 +233,7 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 }
 .group__head {
   position: relative; isolation: isolate;
-  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px;
   padding: 5px 6px 5px 10px; color: var(--white);
   background: var(--green-800);
 }
@@ -247,10 +247,6 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 }
 .group__head h3 {
   margin: 0; color: var(--white); font-size: 1rem; letter-spacing: .02em;
-}
-.group__head h3 small {
-  margin-left: 6px; font-family: var(--font-body); font-size: .68rem; font-weight: 800;
-  letter-spacing: .06em; text-transform: uppercase; color: var(--cream);
 }
 .cap {
   display: inline-flex; align-items: center; gap: 6px;
@@ -267,18 +263,24 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .group--full .meter span { background: var(--green-500); }
 .group--over .meter span { background: var(--coral); }
 
-/* Carnets mínims del grup */
-.reqs {
-  display: flex; flex-wrap: wrap; gap: 4px; padding: 5px 6px 0;
+/* Carnets mínims del grup (a la capçalera) */
+.group { container-type: inline-size; }
+.group__head h3 { flex: 1; }
+.reqs { order: 3; flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 3px; }
+/* Si el grup és prou ample, tot en una sola línia: nom · carnets · places */
+@container (min-width: 250px) {
+  .group__head h3 { flex: none; }
+  .reqs { order: 0; flex: 1; flex-basis: auto; justify-content: flex-end; }
 }
 .reqs:empty { display: none; }
 .req {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 0 7px; border-radius: 999px; line-height: 1.6;
-  font-size: .72rem; font-weight: 800; border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 0 6px; border-radius: 999px; line-height: 1.55;
+  font-size: .7rem; font-weight: 800;
 }
-.req--ok { background: var(--green-100); color: var(--green-700); }
-.req--bad { background: #fde3d8; color: var(--coral-dark); border-color: rgb(229 104 59 / 45%); }
+.req--ok { background: rgb(255 255 255 / 18%); color: var(--white); }
+.req--bad { background: var(--coral); color: var(--white); }
+.req .dot { box-shadow: 0 0 0 1px rgb(255 255 255 / 70%); }
 
 .group .dropzone { flex: 1; padding: 6px; min-height: 44px; }
 
@@ -444,3 +446,15 @@ select:focus, input[type="text"]:focus { border-color: var(--green-500); outline
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------- Tocar i col·locar ---------- */
+
+.chip.is-selected {
+  border-color: var(--coral); background: var(--cream-soft);
+  box-shadow: 0 0 0 3px rgb(229 104 59 / 30%);
+}
+body.is-picking .group, body.is-picking .pool { cursor: pointer; }
+body.is-picking .group .dropzone { outline-color: var(--cream); }
+body.is-picking .group:hover .dropzone { background: var(--cream-soft); }
+.group--blocked { border-color: var(--red); border-style: dashed; }
+.group--blocked .dropzone { background: var(--red-soft); }
