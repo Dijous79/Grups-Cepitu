@@ -37,7 +37,6 @@
   /* ---------- Estat ---------- */
 
   let state = load() || freshState(DEFAULT_PEOPLE);
-  let selected = null;
 
   function freshState(people, rules = []) {
     const groups = { [POOL]: [...people] };
@@ -140,7 +139,6 @@
       text.append(el("span", { className: "chip__warn", textContent: "✕ " + conflictWith.join(", ") }));
       node.title = `${name} no pot anar amb ${conflictWith.join(", ")}`;
     }
-    if (name === selected) node.classList.add("is-selected");
     node.append(text);
     return node;
   }
@@ -182,7 +180,7 @@
 
       const zone = el("div", { className: "dropzone" });
       zone.dataset.drop = g.id;
-      zone.dataset.empty = selected ? "Toca per posar-hi " + selected : "Buit";
+      zone.dataset.empty = "Buit";
       zone.append(...members.map((m) => chip(m, byPerson.get(m))));
 
       card.append(head, meter, zone);
@@ -212,51 +210,8 @@
     $("#rules-count").textContent = state.rules.length;
     rulesBtn.classList.toggle("has-conflict", nConf > 0);
 
-    renderMovebar();
     if ($("#dlg-rules").open) renderRules();
     if ($("#dlg-people").open) renderPeople();
-  }
-
-  /* ---------- Selecció per toc (alternativa a arrossegar) ---------- */
-
-  function select(name) {
-    selected = selected === name ? null : name;
-    render();
-  }
-
-  function renderMovebar() {
-    const bar = $("#movebar");
-    document.body.classList.toggle("is-picking", !!selected);
-    document.body.classList.toggle("has-movebar", !!selected);
-    if (!selected) { bar.hidden = true; return; }
-    bar.hidden = false;
-    $("#movebar-name").textContent = selected;
-    const current = groupOf(selected);
-    const targets = GROUPS.map((g) => {
-      const n = state.groups[g.id].length;
-      const clash = current === g.id ? [] : wouldConflict(selected, g.id);
-      const b = el("button", { type: "button" }, g.id, el("small", { textContent: clash.length ? "⚠ " + clash.join(", ") : `${n}/${g.cap}` }));
-      b.dataset.to = g.id;
-      if (current === g.id) b.classList.add("is-current");
-      if (clash.length) { b.classList.add("is-bad"); b.title = `No pot anar amb ${clash.join(", ")}`; }
-      return b;
-    });
-    const out = el("button", { type: "button", className: "ghost" }, "Sense grup");
-    out.dataset.to = POOL;
-    const cancel = el("button", { type: "button", className: "ghost" }, el("small", { textContent: "Cancel·la" }));
-    cancel.dataset.to = "";
-    $("#movebar-targets").replaceChildren(...targets, out, cancel);
-  }
-
-  function placeSelected(to) {
-    const name = selected;
-    selected = null;
-    if (to && groupOf(name) !== to) {
-      move(name, to);
-      announceMove(name, to);
-      commit();
-      flash(name);
-    } else render();
   }
 
   function announceMove(name, to) {
@@ -272,19 +227,9 @@
     if (node) node.classList.add("is-flash");
   }
 
-  $("#movebar-targets").addEventListener("click", (e) => {
-    const b = e.target.closest("button");
-    if (b) placeSelected(b.dataset.to);
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && selected && !document.querySelector("dialog[open]")) { selected = null; render(); }
-  });
-
   /* ---------- Arrossegar (Pointer Events: ratolí, llapis i tàctil) ---------- */
 
   let drag = null;
-  let suppressClickUntil = 0;
   const LONG_PRESS = 220;
 
   document.addEventListener("pointerdown", (e) => {
@@ -325,11 +270,7 @@
   function startDrag() {
     clearTimeout(drag.timer);
     drag.started = true;
-    selected = null;
     window.getSelection()?.removeAllRanges();
-    document.body.classList.remove("is-picking", "has-movebar");
-    $("#movebar").hidden = true;
-    document.querySelectorAll(".chip.is-selected").forEach((c) => c.classList.remove("is-selected"));
 
     const r = drag.node.getBoundingClientRect();
     drag.offX = drag.x0 - r.left;
@@ -392,7 +333,6 @@
     cancelAnimationFrame(drag.raf);
     ghost.remove();
     document.querySelectorAll(".dropzone.is-over").forEach((z) => z.classList.remove("is-over"));
-    suppressClickUntil = Date.now() + 400;
     drag = null;
 
     const zone = node.parentElement;
@@ -410,19 +350,6 @@
     clearTimeout(drag.timer);
     drag = null;
   }
-
-  // Toc / clic / teclat: selecciona la targeta o la deixa al grup tocat.
-  document.addEventListener("click", (e) => {
-    if (Date.now() < suppressClickUntil) return;
-    const node = e.target.closest(".chip");
-    if (node && !node.classList.contains("chip--ghost")) { select(node.dataset.name); return; }
-    if (selected) {
-      const holder = e.target.closest(".group, .pool");
-      if (holder && !e.target.closest("dialog, .movebar, .toolbar")) {
-        placeSelected(holder.querySelector("[data-drop]").dataset.drop);
-      }
-    }
-  });
 
   /* ---------- Reparteix automàticament ---------- */
 
@@ -446,7 +373,6 @@
       if (options.length) move(name, options[0].g.id);
       else left.push(name);
     }
-    selected = null;
     commit();
     const placed = pending.length - left.length;
     toast(left.length
@@ -457,7 +383,6 @@
   $("#btn-reset").addEventListener("click", () => {
     if (!confirm("Vols treure tots els monitors dels grups? Les restriccions es mantenen.")) return;
     state = freshState(state.people, state.rules);
-    selected = null;
     commit();
     toast("Grups buidats");
   });
@@ -575,14 +500,12 @@
     state.people = state.people.filter((n) => n !== name);
     state.rules = state.rules.filter((r) => r.a !== name && r.b !== name);
     for (const key in state.groups) state.groups[key] = state.groups[key].filter((n) => n !== name);
-    if (selected === name) selected = null;
     commit();
   });
 
   $("#btn-defaults").addEventListener("click", () => {
     if (!confirm("Es tornarà a la llista original de monitors i es buidaran els grups. Les restriccions entre monitors que hi siguin es mantenen. Continuar?")) return;
     state = normalize(freshState(DEFAULT_PEOPLE, state.rules));
-    selected = null;
     commit();
   });
 

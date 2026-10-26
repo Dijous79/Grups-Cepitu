@@ -49,7 +49,6 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-body.has-movebar { padding-bottom: 120px; }
 
 img { max-width: 100%; display: block; }
 button, input, select { font: inherit; color: inherit; }
@@ -268,8 +267,6 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .dropzone.is-over { background: var(--green-100); outline-color: var(--green-500); }
 .group:has(.dropzone.is-over) { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 
-body.is-picking .group .dropzone { cursor: pointer; outline-color: var(--cream); }
-body.is-picking .group .dropzone:hover { background: var(--cream-soft); }
 
 .chip {
   display: inline-flex; align-items: center;
@@ -285,10 +282,6 @@ body.is-picking .group .dropzone:hover { background: var(--cream-soft); }
 .chip__text { display: flex; flex-direction: column; line-height: 1.1; text-align: left; }
 .chip__warn { font-size: .66rem; font-weight: 700; color: var(--red-dark); }
 
-.chip.is-selected {
-  border-color: var(--coral); background: var(--cream-soft);
-  box-shadow: 0 0 0 3px rgb(229 104 59 / 25%);
-}
 .chip.is-conflict {
   background: var(--red-soft); border-color: var(--red); color: var(--red-dark);
   animation: shake .35s ease 1;
@@ -313,30 +306,6 @@ body.is-picking .group .dropzone:hover { background: var(--cream-soft); }
   60% { transform: scale(1.06); }
   100% { transform: none; }
 }
-
-/* ---------- Barra de moviment (selecció per toc) ---------- */
-
-.movebar {
-  position: fixed; inset: auto 0 0 0; z-index: 60;
-  background: var(--green-900); color: var(--white);
-  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-  box-shadow: 0 -10px 30px rgb(0 0 0 / 20%);
-  border-radius: 20px 20px 0 0;
-}
-.movebar__title { margin: 0 0 6px; font-size: .85rem; color: rgb(255 255 255 / 80%); }
-.movebar__title strong { color: var(--cream); }
-.movebar__targets { display: flex; flex-wrap: wrap; gap: 5px; }
-.movebar__targets button {
-  border: 0; cursor: pointer; border-radius: 999px; padding: 6px 11px;
-  font-weight: 800; font-size: .85rem; background: var(--white); color: var(--green-900);
-  display: inline-flex; gap: 6px; align-items: center;
-}
-.movebar__targets button small { font-weight: 700; color: var(--ink-soft); }
-.movebar__targets button.is-current { background: var(--cream); }
-.movebar__targets button.is-bad { box-shadow: inset 0 0 0 2px var(--red); }
-.movebar__targets button.is-bad small { color: var(--red); }
-.movebar__targets .ghost { background: rgb(255 255 255 / 12%); color: var(--white); }
-.movebar__targets .ghost small { color: rgb(255 255 255 / 70%); }
 
 /* ---------- Diàlegs ---------- */
 
@@ -417,7 +386,6 @@ select:focus, input[type="text"]:focus { border-color: var(--green-500); outline
 }
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .toast.is-bad { background: var(--red); }
-body.has-movebar .toast { bottom: 130px; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
