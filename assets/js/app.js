@@ -546,7 +546,6 @@
       ...TRAITS.filter((t) => info[t.key]).map((t) => t.label),
     ];
     if (info.year) meta.unshift(info.year);
-    $("#picked-name").textContent = selected;
     $("#picked-meta").textContent = meta.join(" · ");
     const prefs = $("#picked-prefs");
     prefs.textContent = info.prefs ? "Preferències: " + info.prefs : "Sense preferències";
