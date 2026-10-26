@@ -24,12 +24,12 @@
     "MC", "Chali", "Inyi", "Tondes", "Bru", "Eli", "Riki", "Ro", "Q. Geis",
     "Muli", "Paupo", "Ani", "Benet", "Qwerty", "Neus", "Santi", "Quimpu", "Quimta", "Cris",
     "Ivet", "Berta", "Marvi", "Biel", "AinaBo", "Max", "T. Forre", "Judit", "Vicen", "Bellau",
-    "Ton", "Erica", "MartinaBo", "AinaCo", "Lucas", "Pauri", "MartinaFo", "Anglarill", "Herruzo", "Dani",
+    "Ton", "Erica", "Bonet", "AinaCo", "Lucas", "Pauri", "MartinaFo", "Anglarill", "Herruzo", "Dani",
   ];
 
   // Noms que han canviat respecte de versions antigues de les dades desades.
   // "Geis" s'esborra perquè "Q." i "Geis" eren la mateixa persona: "Q. Geis".
-  const RENAMES = { "Q.": "Q. Geis", "AinCo": "AinaCo" };
+  const RENAMES = { "Q.": "Q. Geis", "AinCo": "AinaCo", "MartinaBo": "Bonet" };
   const DROPPED = ["Geis"];
 
   // Carnets (c = conduir, m = monitor, d = director) i preferències de cada monitor.
@@ -65,7 +65,7 @@
     "Ton": ["c"],
     "Bellau": ["c"],
     "Erica": ["", "Fora casa"],
-    "MartinaBo": ["mc"],
+    "Bonet": ["mc"],
   };
 
   // Sexe (h = home, d = dona) i any de naixement.
@@ -77,7 +77,7 @@
     "Quimpu": ["h", 2005], "Cris": ["d", 2005], "Ivet": ["d", 2005], "Berta": ["d", 2005],
     "Marvi": ["d", 2005], "Quimta": ["h", 2005], "Biel": ["h", 2006], "AinaBo": ["d", 2006],
     "Max": ["h", 2006], "T. Forre": ["h", 2006], "Judit": ["d", 2006], "Vicen": ["h", 2007],
-    "Ton": ["h", 2007], "Bellau": ["h", 2007], "Erica": ["d", 2007], "MartinaBo": ["d", 2007],
+    "Ton": ["h", 2007], "Bellau": ["h", 2007], "Erica": ["d", 2007], "Bonet": ["d", 2007],
     "Pauri": ["h", 2008], "Lucas": ["h", 2008], "Anglarill": ["d", 2008], "MartinaFo": ["d", 2008],
     "Dani": ["d", 2008], "Herruzo": ["d", 2008], "AinaCo": ["d", 2007],
   };
