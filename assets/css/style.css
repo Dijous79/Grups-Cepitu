@@ -21,6 +21,9 @@
   --ink: #1d2420;
   --ink-soft: #4f5a53;
   --line: #e2ddd0;
+  --dot-c: #f2c12e;
+  --dot-m: #3b7dd8;
+  --dot-d: #8e5bd0;
 
   --font-display: "Bitter", Georgia, serif;
   --font-body: "Mulish", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -153,10 +156,26 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 
 .toolbar {
   display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
-  margin: 10px 0;
+  margin: 10px 0 6px;
 }
-.hint { margin: 0 0 0 6px; font-size: .85rem; color: var(--ink-soft); }
+
+/* Llegenda de carnets */
+.legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px;
+  margin: 0 0 8px; font-size: .82rem; font-weight: 700; color: var(--ink-soft);
+}
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.hint { margin: 0 0 0 auto; font-size: .82rem; font-weight: 600; color: var(--ink-soft); }
 @media (max-width: 900px) { .hint { display: none; } }
+
+.dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
+}
+.dot--c { background: var(--dot-c); }
+.dot--m { background: var(--dot-m); }
+.dot--d { background: var(--dot-d); }
+.dots { display: inline-flex; gap: 2px; margin-left: 5px; vertical-align: middle; }
 @media (max-width: 640px) {
   .toolbar {
     flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
@@ -280,6 +299,7 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 }
 .chip:hover { border-color: var(--green-500); }
 .chip__text { display: flex; flex-direction: column; line-height: 1.1; text-align: left; }
+.chip__name { display: inline-flex; align-items: center; }
 .chip__warn { font-size: .66rem; font-weight: 700; color: var(--red-dark); }
 
 .chip.is-conflict {
@@ -364,9 +384,19 @@ select:focus, input[type="text"]:focus { border-color: var(--green-500); outline
 .icon-btn svg { width: 18px; height: 18px; }
 
 .add-form { display: flex; gap: 8px; margin-bottom: 14px; }
-.people-list { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-.people-list li { padding: 4px 4px 4px 12px; font-weight: 700; justify-content: space-between; }
-.people-list li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people-list li { padding: 6px 6px 6px 12px; font-weight: 700; flex-wrap: wrap; gap: 6px; }
+.people-list .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people-list .prefs { flex-basis: 100%; min-height: 36px; padding: 6px 10px; font-size: .88rem; font-weight: 600; }
+.carnet-toggles { display: inline-flex; gap: 4px; }
+.carnet {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  min-width: 40px; height: 32px; padding: 0 8px; border-radius: 999px;
+  border: 1.5px solid var(--line); background: var(--white);
+  font-weight: 800; font-size: .8rem; color: var(--ink-soft);
+}
+.carnet .dot { opacity: .3; }
+.carnet[aria-pressed="true"] { border-color: var(--green-500); background: var(--green-100); color: var(--green-900); }
+.carnet[aria-pressed="true"] .dot { opacity: 1; }
 
 .export {
   background: var(--paper); border-radius: var(--radius-sm); padding: 14px 16px;

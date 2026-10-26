@@ -23,6 +23,47 @@
     "Ton", "Erica", "MartinaBo", "AinCo", "Lucas", "Pauri", "MartinaFo", "Anglarill", "Herruzo", "Dani",
   ];
 
+  // Carnets (c = conduir, m = monitor, d = director) i preferències de cada monitor.
+  // De moment les preferències només es guarden i es mostren; no s'apliquen enlloc.
+  const DEFAULT_INFO = {
+    "MC": ["c"],
+    "Chali": ["mc"],
+    "Inyi": ["dcm", "No fora casa, no petits, no Q. Geis"],
+    "Tondes": ["mc", "Casa"],
+    "Bru": ["c", "Casa"],
+    "Eli": ["mc", "Fora casa"],
+    "Riki": ["mcd", "K2"],
+    "Ro": ["mc"],
+    "Q. Geis": ["mc", "No Inyi, Ruta o petits, no K1"],
+    "Muli": ["md", "K1"],
+    "Paupo": ["m", "Fora casa, no Ani"],
+    "Ani": ["m", "No petits, no Paupo"],
+    "Qwerty": ["mc"],
+    "Neus": ["m"],
+    "Santi": ["mc", "No K2, casa"],
+    "Quimpu": ["c"],
+    "Cris": ["mc"],
+    "Ivet": ["m", "No grans, no K1"],
+    "Berta": ["mc", "K2"],
+    "Marvi": ["mc", "Ruta"],
+    "Quimta": ["mc", "Fora casa"],
+    "Biel": ["c"],
+    "AinaBo": ["mc"],
+    "Max": ["m", "Fora casa"],
+    "T. Forre": ["c", "Fora casa"],
+    "Judit": ["mc"],
+    "Vicen": ["", "No K2"],
+    "Ton": ["c"],
+    "Bellau": ["c"],
+    "Erica": ["", "Fora casa"],
+    "MartinaBo": ["mc"],
+  };
+  const CARNETS = [
+    { key: "c", label: "Conduir" },
+    { key: "m", label: "Monitor" },
+    { key: "d", label: "Director" },
+  ];
+
   const STORAGE_KEY = "cepitu-grups-v1";
   const POOL = "pool";
 
@@ -36,12 +77,22 @@
 
   /* ---------- Estat ---------- */
 
-  let state = load() || freshState(DEFAULT_PEOPLE);
+  let state = load() || normalize(freshState(DEFAULT_PEOPLE));
 
-  function freshState(people, rules = []) {
+  function freshState(people, rules = [], info = {}) {
     const groups = { [POOL]: [...people] };
     for (const g of GROUPS) groups[g.id] = [];
-    return { people: [...people], groups, rules };
+    return { people: [...people], groups, rules, info };
+  }
+
+  // Ordena els carnets sempre igual (c, m, d) i descarta lletres desconegudes.
+  function cleanCarnets(str) {
+    return CARNETS.map((c) => c.key).filter((k) => String(str || "").includes(k)).join("");
+  }
+
+  function defaultInfo(name) {
+    const [carnets = "", prefs = ""] = DEFAULT_INFO[name] || [];
+    return { carnets: cleanCarnets(carnets), prefs };
   }
 
   // Garanteix que cada monitor és exactament a una llista.
@@ -55,7 +106,14 @@
     }
     for (const n of people) if (!seen.has(n)) groups[POOL].push(n);
     const rules = (s.rules || []).filter((r) => r && known.has(r.a) && known.has(r.b) && r.a !== r.b);
-    return { people, groups, rules };
+    const info = {};
+    for (const n of people) {
+      const saved = s.info && s.info[n];
+      info[n] = saved
+        ? { carnets: cleanCarnets(saved.carnets), prefs: String(saved.prefs || "") }
+        : defaultInfo(n);
+    }
+    return { people, groups, rules, info };
   }
 
   // Versions antigues tenien "Q." i "Geis" com a dos monitors: és una sola persona.
@@ -68,6 +126,7 @@
       people: people.filter(drop).map(fix),
       groups: Object.fromEntries(Object.entries(s.groups || {}).map(([k, l]) => [k, l.filter(drop).map(fix)])),
       rules: (s.rules || []).filter((r) => drop(r.a) && drop(r.b)).map((r) => ({ ...r, a: fix(r.a), b: fix(r.b) })),
+      info: s.info,
     };
   }
 
@@ -133,12 +192,22 @@
   function chip(name, conflictWith) {
     const node = el("button", { type: "button", className: "chip" });
     node.dataset.name = name;
-    const text = el("span", { className: "chip__text" }, el("span", { textContent: name }));
+    const info = state.info[name] || defaultInfo(name);
+    const line = el("span", { className: "chip__name", textContent: name });
+    const has = CARNETS.filter((c) => info.carnets.includes(c.key));
+    if (has.length) {
+      line.append(el("span", { className: "dots", ariaLabel: has.map((c) => c.label).join(", ") },
+        ...has.map((c) => el("i", { className: "dot dot--" + c.key }))));
+    }
+    const text = el("span", { className: "chip__text" }, line);
+    const tip = [name + (has.length ? " · " + has.map((c) => c.label).join(", ") : "")];
+    if (info.prefs) tip.push("Preferències: " + info.prefs);
     if (conflictWith && conflictWith.length) {
       node.classList.add("is-conflict");
       text.append(el("span", { className: "chip__warn", textContent: "✕ " + conflictWith.join(", ") }));
-      node.title = `${name} no pot anar amb ${conflictWith.join(", ")}`;
+      tip.push(`No pot anar amb ${conflictWith.join(", ")}`);
     }
+    node.title = tip.join("\n");
     node.append(text);
     return node;
   }
@@ -382,7 +451,7 @@
 
   $("#btn-reset").addEventListener("click", () => {
     if (!confirm("Vols treure tots els monitors dels grups? Les restriccions es mantenen.")) return;
-    state = freshState(state.people, state.rules);
+    state = freshState(state.people, state.rules, state.info);
     commit();
     toast("Grups buidats");
   });
@@ -465,6 +534,7 @@
     renderPeople();
     dlgPeople.showModal();
   });
+  dlgPeople.addEventListener("close", render);
 
   function renderPeople() {
     const list = $("#people-list");
@@ -473,9 +543,21 @@
       return;
     }
     list.replaceChildren(...state.people.map((n) => {
+      const info = state.info[n];
+      const toggles = el("span", { className: "carnet-toggles" }, ...CARNETS.map((c) => {
+        const on = info.carnets.includes(c.key);
+        const b = el("button", { type: "button", className: "carnet", title: c.label, ariaLabel: `${c.label}: ${n}` },
+          el("i", { className: "dot dot--" + c.key }), c.key.toUpperCase());
+        b.setAttribute("aria-pressed", on);
+        b.dataset.carnet = c.key;
+        b.dataset.who = n;
+        return b;
+      }));
+      const prefs = el("input", { type: "text", className: "prefs", value: info.prefs, maxLength: 120, placeholder: "Preferències", ariaLabel: "Preferències de " + n });
+      prefs.dataset.who = n;
       const del = el("button", { type: "button", className: "icon-btn", innerHTML: ICON_TRASH, ariaLabel: "Treu " + n });
       del.dataset.person = n;
-      return el("li", {}, el("span", { textContent: n, title: n }), del);
+      return el("li", {}, el("span", { className: "who", textContent: n, title: n }), toggles, del, prefs);
     }));
   }
 
@@ -487,12 +569,21 @@
     if (state.people.some((n) => n.toLowerCase() === name.toLowerCase())) { toast(`${name} ja hi és`, true); return; }
     state.people.push(name);
     state.groups[POOL].push(name);
+    state.info[name] = { carnets: "", prefs: "" };
     input.value = "";
     commit();
     toast(`${name} afegit a «Sense grup»`);
   });
 
   $("#people-list").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-carnet]");
+    if (t) {
+      const info = state.info[t.dataset.who];
+      const k = t.dataset.carnet;
+      info.carnets = cleanCarnets(info.carnets.includes(k) ? info.carnets.replace(k, "") : info.carnets + k);
+      commit();
+      return;
+    }
     const b = e.target.closest("[data-person]");
     if (!b) return;
     const name = b.dataset.person;
@@ -500,12 +591,21 @@
     state.people = state.people.filter((n) => n !== name);
     state.rules = state.rules.filter((r) => r.a !== name && r.b !== name);
     for (const key in state.groups) state.groups[key] = state.groups[key].filter((n) => n !== name);
+    delete state.info[name];
     commit();
+  });
+
+  $("#people-list").addEventListener("change", (e) => {
+    const input = e.target.closest("input.prefs");
+    if (!input) return;
+    state.info[input.dataset.who].prefs = input.value.trim();
+    // Només es desa: repintar la llista ara trauria el focus del camp que s'està editant.
+    save();
   });
 
   $("#btn-defaults").addEventListener("click", () => {
     if (!confirm("Es tornarà a la llista original de monitors i es buidaran els grups. Les restriccions entre monitors que hi siguin es mantenen. Continuar?")) return;
-    state = normalize(freshState(DEFAULT_PEOPLE, state.rules));
+    state = normalize(freshState(DEFAULT_PEOPLE, state.rules, state.info));
     commit();
   });
 
@@ -544,6 +644,7 @@
       p: state.people,
       g: Object.fromEntries(GROUPS.map((g) => [g.id, state.groups[g.id].map((n) => idx.get(n))])),
       r: state.rules.map((r) => (r.note ? [idx.get(r.a), idx.get(r.b), r.note] : [idx.get(r.a), idx.get(r.b)])),
+      i: state.people.map((n) => [state.info[n].carnets, state.info[n].prefs]),
     };
     return location.origin + location.pathname + "#d=" + toBase64Url(JSON.stringify(data));
   }
@@ -555,7 +656,8 @@
       const p = d.p;
       const groups = Object.fromEntries(Object.entries(d.g || {}).map(([k, l]) => [k, l.map((i) => p[i])]));
       const rules = (d.r || []).map(([a, b, note]) => (note ? { a: p[a], b: p[b], note } : { a: p[a], b: p[b] }));
-      const incoming = normalize(migrate({ people: p, groups, rules }));
+      const info = d.i ? Object.fromEntries(p.map((n, i) => [n, { carnets: (d.i[i] || [])[0], prefs: (d.i[i] || [])[1] }])) : undefined;
+      const incoming = normalize(migrate({ people: p, groups, rules, info }));
       const hasLocal = state.people.length !== state.groups[POOL].length || state.rules.length;
       if (!hasLocal || confirm("Has obert un enllaç amb una distribució de grups. Vols carregar-la? Substituirà la que tens ara en aquest dispositiu.")) {
         state = incoming;

@@ -47,6 +47,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>
         Buida
       </button>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot dot--c"></i>Conduir</span>
+      <span><i class="dot dot--m"></i>Monitor</span>
+      <span><i class="dot dot--d"></i>Director</span>
       <p class="hint">Arrossega els monitors als grups. Al mòbil, mantén premut i arrossega.</p>
     </div>
 
@@ -80,6 +86,7 @@
   <dialog class="sheet" id="dlg-people" aria-labelledby="dlg-people-title">
     <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
     <h2 id="dlg-people-title">Monitors</h2>
+    <p class="muted small">Toca C, M o D per marcar els carnets (conduir, monitor, director). Les preferències de moment només es guarden.</p>
     <form class="add-form" id="add-form">
       <input id="add-name" type="text" maxlength="24" placeholder="Nom del monitor" aria-label="Nom del monitor" required>
       <button class="btn btn--sm btn--green" type="submit">Afegeix</button>
