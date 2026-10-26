@@ -267,7 +267,7 @@
 
   function render() {
     const { byPerson, byGroup } = conflicts();
-    const { byGroup: reqByGroup, missing } = requirements();
+    const { byGroup: reqByGroup } = requirements();
     if (selected && !state.people.includes(selected)) selected = null;
     const from = selected && groupOf(selected);
     document.body.classList.toggle("is-picking", !!selected);
@@ -337,7 +337,6 @@
         ? `<span class="stat stat--bad" title="Restriccions trencades">⚠ <strong>${nConf}</strong></span>`
         : `<span class="stat stat--ok" title="Cap restricció trencada">✓</span>`,
     ];
-    if (missing.length) stats.push(`<span class="stat stat--over" title="Falten carnets:&#10;${missing.join("&#10;")}">Falten <strong>${missing.length}</strong></span>`);
     if (over.length) stats.push(`<span class="stat stat--over" title="Grups amb massa gent">+ ${over.map((g) => g.id).join(", ")}</span>`);
     $("#stats").innerHTML = stats.join("");
 
