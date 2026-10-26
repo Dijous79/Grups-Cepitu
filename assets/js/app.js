@@ -7,14 +7,17 @@
 (() => {
   "use strict";
 
+  // casa = a la casa de colònies; fora = fora casa. `needs` és el mínim de carnets del grup.
   const GROUPS = [
-    { id: "PETITS", cap: 6, img: "petits.jpg" },
-    { id: "MITJANS", cap: 6, img: "mitjans.jpg" },
-    { id: "GRANS", cap: 7, img: "grans.jpg" },
-    { id: "K1", cap: 7, img: "k1.jpg" },
-    { id: "K2", cap: 7, img: "k2.jpg" },
-    { id: "RUTA", cap: 6, img: "ruta.jpg" },
+    { id: "PETITS", cap: 6, img: "petits.jpg", zone: "casa", needs: { c: 1 } },
+    { id: "MITJANS", cap: 6, img: "mitjans.jpg", zone: "casa", needs: { c: 1 } },
+    { id: "GRANS", cap: 7, img: "grans.jpg", zone: "casa", needs: { c: 1 } },
+    { id: "K1", cap: 7, img: "k1.jpg", zone: "fora", needs: { c: 3, m: 3, d: 1 } },
+    { id: "K2", cap: 7, img: "k2.jpg", zone: "fora", needs: { c: 3, m: 3, d: 1 } },
+    { id: "RUTA", cap: 6, img: "ruta.jpg", zone: "fora", needs: { c: 3, m: 3 } },
   ];
+  // A més, en algun grup de casa hi ha d'haver almenys un director.
+  const CASA = GROUPS.filter((g) => g.zone === "casa").map((g) => g.id);
 
   const DEFAULT_PEOPLE = [
     "MC", "Chali", "Inyi", "Tondes", "Bru", "Eli", "Riki", "Ro", "Q. Geis",
@@ -187,6 +190,52 @@
     render();
   }
 
+  /* ---------- Carnets mínims per grup ---------- */
+
+  function hasCarnet(name, key) {
+    return (state.info[name] || defaultInfo(name)).carnets.includes(key);
+  }
+
+  function countCarnet(groupId, key) {
+    return state.groups[groupId].filter((n) => hasCarnet(n, key)).length;
+  }
+
+  function casaDirectors() {
+    return CASA.reduce((sum, id) => sum + countCarnet(id, "d"), 0);
+  }
+
+  // Quants carnets de cada tipus li falten al grup (0 si ja en té prou).
+  function deficit(groupId, key) {
+    const g = GROUPS.find((x) => x.id === groupId);
+    if (key === "d" && g.zone === "casa") return casaDirectors() ? 0 : 1;
+    return Math.max(0, (g.needs[key] || 0) - countCarnet(groupId, key));
+  }
+
+  // Insígnies per a la capçalera de cada grup + llista del que falta en total.
+  function requirements() {
+    const byGroup = new Map();
+    const missing = [];
+    const casaD = casaDirectors();
+    for (const g of GROUPS) {
+      const items = [];
+      for (const c of CARNETS) {
+        const have = countCarnet(g.id, c.key);
+        const min = g.needs[c.key];
+        if (min) {
+          const ok = have >= min;
+          items.push({ key: c.key, text: `${have}/${min}`, ok, title: `${c.label}: ${have} de ${min} mínim` });
+          if (!ok) missing.push(`${g.id}: ${min - have} ${c.label.toLowerCase()}`);
+        } else if (c.key === "d" && g.zone === "casa") {
+          if (!casaD) items.push({ key: "d", text: "0/1", ok: false, title: "Cal un director en algun grup de casa" });
+          else if (have) items.push({ key: "d", text: String(have), ok: true, title: `Director: ${have}` });
+        }
+      }
+      byGroup.set(g.id, items);
+    }
+    if (!casaD) missing.push("Casa: 1 director");
+    return { byGroup, missing };
+  }
+
   /* ---------- Pintat ---------- */
 
   function chip(name, conflictWith) {
@@ -214,6 +263,7 @@
 
   function render() {
     const { byPerson, byGroup } = conflicts();
+    const { byGroup: reqByGroup, missing } = requirements();
 
     // Sense grup
     const pool = $("#pool");
@@ -241,9 +291,12 @@
 
       const head = el("header", { className: "group__head" },
         el("img", { src: "assets/img/colonies/" + g.img, alt: "", loading: "lazy" }),
-        el("h3", { textContent: g.id }),
+        el("h3", {}, g.id, el("small", { textContent: g.zone === "casa" ? "casa" : "fora" })),
         cap,
       );
+      const reqs = el("div", { className: "reqs" }, ...reqByGroup.get(g.id).map((r) =>
+        el("span", { className: "req" + (r.ok ? " req--ok" : " req--bad"), title: r.title },
+          el("i", { className: "dot dot--" + r.key }), r.text)));
       const meter = el("div", { className: "meter" }, el("span"));
       meter.firstChild.style.width = Math.min(100, (n / g.cap) * 100) + "%";
 
@@ -252,7 +305,7 @@
       zone.dataset.empty = "Buit";
       zone.append(...members.map((m) => chip(m, byPerson.get(m))));
 
-      card.append(head, meter, zone);
+      card.append(head, meter, reqs, zone);
       if (bad.length) {
         card.append(el("ul", { className: "conflicts" }, ...bad.map((r) =>
           el("li", {}, el("span", {},
@@ -272,6 +325,7 @@
         ? `<span class="stat stat--bad" title="Restriccions trencades">⚠ <strong>${nConf}</strong></span>`
         : `<span class="stat stat--ok" title="Cap restricció trencada">✓</span>`,
     ];
+    if (missing.length) stats.push(`<span class="stat stat--over" title="Falten carnets:&#10;${missing.join("&#10;")}">Falten <strong>${missing.length}</strong></span>`);
     if (over.length) stats.push(`<span class="stat stat--over" title="Grups amb massa gent">+ ${over.map((g) => g.id).join(", ")}</span>`);
     $("#stats").innerHTML = stats.join("");
 
@@ -429,24 +483,38 @@
       const j = Math.floor(Math.random() * (i + 1));
       [pending[i], pending[j]] = [pending[j], pending[i]];
     }
-    // Primer els que tenen més restriccions, que són els més difícils de col·locar.
-    const weight = (n) => state.rules.filter((r) => r.a === n || r.b === n).length;
-    pending.sort((a, b) => weight(b) - weight(a));
+    // Primer els carnets més escassos (director, conduir, monitor) i els que tenen
+    // restriccions; els que no tenen carnet omplen al final els forats que quedin.
+    const WEIGHT = { d: 8, c: 3, m: 1 };
+    const carnetWeight = (n) => CARNETS.reduce((sum, c) => sum + (hasCarnet(n, c.key) ? WEIGHT[c.key] : 0), 0);
+    const rulesOf = (n) => state.rules.filter((r) => r.a === n || r.b === n).length;
+    pending.sort((a, b) => carnetWeight(b) + rulesOf(b) * 2 - (carnetWeight(a) + rulesOf(a) * 2));
 
     const left = [];
     for (const name of pending) {
       const options = GROUPS
         .filter((g) => state.groups[g.id].length < g.cap && !wouldConflict(name, g.id).length)
-        .map((g) => ({ g, free: g.cap - state.groups[g.id].length + Math.random() * 0.5 }))
-        .sort((a, b) => b.free - a.free);
+        .map((g) => {
+          // Quant ajuda aquest monitor a cobrir el que li falta al grup.
+          const helps = CARNETS.reduce((sum, c) => sum + (hasCarnet(name, c.key) && deficit(g.id, c.key) ? WEIGHT[c.key] : 0), 0);
+          // Els grups que encara han d'aconseguir carnets reserven les places per a qui en té.
+          const needed = CARNETS.reduce((sum, c) => sum + deficit(g.id, c.key), 0);
+          const free = g.cap - state.groups[g.id].length;
+          const room = helps ? free : free - needed;
+          return { g, score: helps * 100 + room + Math.random() * 0.5 };
+        })
+        .sort((a, b) => b.score - a.score);
       if (options.length) move(name, options[0].g.id);
       else left.push(name);
     }
     commit();
     const placed = pending.length - left.length;
-    toast(left.length
-      ? `${placed} col·locats · ${left.length} sense lloc (${left.join(", ")})`
-      : `${placed} monitors repartits respectant les restriccions`, left.length > 0);
+    const { missing } = requirements();
+    const bad = left.length > 0 || missing.length > 0;
+    toast([
+      left.length ? `${placed} col·locats · ${left.length} sense lloc (${left.join(", ")})` : `${placed} monitors repartits`,
+      missing.length ? `Falten: ${missing.join(", ")}` : "",
+    ].filter(Boolean).join(" · "), bad);
   });
 
   $("#btn-reset").addEventListener("click", () => {
@@ -623,6 +691,8 @@
       for (const r of byGroup.get(g.id) || []) lines.push(`⚠ ${r.a} i ${r.b} no poden anar junts`);
       lines.push("");
     }
+    const { missing } = requirements();
+    if (missing.length) lines.push(`*Falten carnets:* ${missing.join(", ")}`, "");
     if (state.groups[POOL].length) lines.push(`*Sense grup:* ${state.groups[POOL].join(", ")}`);
     return lines.join("\n").trim();
   }

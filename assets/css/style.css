@@ -109,6 +109,13 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 }
 .stat strong { color: var(--cream); }
 .stat--over { background: var(--coral); border-color: var(--coral); }
+.stat--over strong { color: var(--white); }
+@media (max-width: 480px) {
+  .brand img { display: none; }
+  .brand small { font-size: .75rem; margin-left: 2px; }
+  .stats { gap: 4px; }
+  .stat { padding: 1px 7px; font-size: .75rem; }
+}
 .stat--bad { background: var(--red); border-color: var(--red); }
 .stat--bad strong { color: var(--white); }
 .stat--ok { background: var(--green-500); border-color: var(--green-500); }
@@ -169,13 +176,13 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 @media (max-width: 900px) { .hint { display: none; } }
 
 .dot {
-  display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none;
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: none;
   box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
 }
 .dot--c { background: var(--dot-c); }
 .dot--m { background: var(--dot-m); }
 .dot--d { background: var(--dot-d); }
-.dots { display: inline-flex; gap: 2px; margin-left: 5px; vertical-align: middle; }
+.dots { display: inline-flex; gap: 2px; margin-left: 4px; vertical-align: middle; }
 @media (max-width: 640px) {
   .toolbar {
     flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
@@ -241,6 +248,10 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .group__head h3 {
   margin: 0; color: var(--white); font-size: 1rem; letter-spacing: .02em;
 }
+.group__head h3 small {
+  margin-left: 6px; font-family: var(--font-body); font-size: .68rem; font-weight: 800;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--cream);
+}
 .cap {
   display: inline-flex; align-items: center; gap: 6px;
   font-weight: 800; font-size: .78rem;
@@ -255,6 +266,19 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .meter span { display: block; height: 100%; background: var(--cream); transition: width .25s; }
 .group--full .meter span { background: var(--green-500); }
 .group--over .meter span { background: var(--coral); }
+
+/* Carnets mínims del grup */
+.reqs {
+  display: flex; flex-wrap: wrap; gap: 4px; padding: 5px 6px 0;
+}
+.reqs:empty { display: none; }
+.req {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 0 7px; border-radius: 999px; line-height: 1.6;
+  font-size: .72rem; font-weight: 800; border: 1px solid transparent;
+}
+.req--ok { background: var(--green-100); color: var(--green-700); }
+.req--bad { background: #fde3d8; color: var(--coral-dark); border-color: rgb(229 104 59 / 45%); }
 
 .group .dropzone { flex: 1; padding: 6px; min-height: 44px; }
 
