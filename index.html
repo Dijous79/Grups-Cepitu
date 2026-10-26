@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Grups de colònies · Cepitu</title>
+  <meta name="description" content="Eina per repartir els monitors de l'Esplai Cepitu als grups de colònies d'estiu, amb restriccions.">
+  <meta name="theme-color" content="#12301c">
+  <link rel="icon" href="assets/img/granota.png">
+  <link rel="apple-touch-icon" href="assets/img/granota.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700;800&family=Mulish:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="assets/js/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./">
+        <img src="assets/img/granota.png" alt="" width="42" height="42">
+        <span>Cepitu <small>Grups de colònies</small></span>
+      </a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Colònies d'estiu</span>
+      <h1>Qui va a cada grup?</h1>
+      <p class="lead">Arrossega cada monitor al seu grup. Al mòbil, mantén premut per arrossegar o toca'l per triar-ne el grup.</p>
+      <div class="stats" id="stats" aria-live="polite"></div>
+    </div>
+  </section>
+  <svg class="wave" viewBox="0 0 1440 48" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 30c120-18 240-26 360-18s240 30 360 30 240-24 360-30 240 6 360 16v20H0z"/></svg>
+
+  <main class="wrap" id="main">
+    <div class="toolbar" role="toolbar" aria-label="Accions">
+      <button class="btn btn--sm" type="button" id="btn-rules">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
+        Restriccions <span class="count" id="rules-count">0</span>
+      </button>
+      <button class="btn btn--sm btn--green" type="button" id="btn-auto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+        Reparteix la resta
+      </button>
+      <button class="btn btn--sm btn--line" type="button" id="btn-export">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
+        Comparteix
+      </button>
+      <button class="btn btn--sm btn--line" type="button" id="btn-people">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></svg>
+        Monitors
+      </button>
+      <button class="btn btn--sm btn--line" type="button" id="btn-reset">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>
+        Buida grups
+      </button>
+    </div>
+
+    <div class="board">
+      <section class="pool" aria-labelledby="pool-title">
+        <div class="pool__head">
+          <h2 id="pool-title">Sense grup</h2>
+          <span class="pill" id="pool-count">0</span>
+        </div>
+        <div class="dropzone dropzone--pool" data-drop="pool" id="pool"></div>
+      </section>
+
+      <div class="groups" id="groups"></div>
+    </div>
+  </main>
+
+  <!-- Barra inferior quan hi ha un monitor seleccionat (sobretot per al mòbil) -->
+  <div class="movebar" id="movebar" hidden>
+    <div class="wrap">
+      <p class="movebar__title">Mou <strong id="movebar-name"></strong> a…</p>
+      <div class="movebar__targets" id="movebar-targets"></div>
+    </div>
+  </div>
+
+  <dialog class="sheet" id="dlg-rules" aria-labelledby="dlg-rules-title">
+    <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
+    <h2 id="dlg-rules-title">Restriccions</h2>
+    <p class="muted">Parelles de monitors que <strong>no poden anar junts</strong>. Si coincideixen al mateix grup, es marcaran en vermell.</p>
+    <form class="rule-form" id="rule-form">
+      <select id="rule-a" aria-label="Primer monitor" required></select>
+      <span class="rule-form__x" aria-hidden="true">✕</span>
+      <select id="rule-b" aria-label="Segon monitor" required></select>
+      <input id="rule-note" type="text" maxlength="60" placeholder="Motiu (opcional)" aria-label="Motiu">
+      <button class="btn btn--sm" type="submit">Afegeix</button>
+    </form>
+    <ul class="rule-list" id="rule-list"></ul>
+  </dialog>
+
+  <dialog class="sheet" id="dlg-people" aria-labelledby="dlg-people-title">
+    <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
+    <h2 id="dlg-people-title">Monitors</h2>
+    <form class="add-form" id="add-form">
+      <input id="add-name" type="text" maxlength="24" placeholder="Nom del monitor" aria-label="Nom del monitor" required>
+      <button class="btn btn--sm btn--green" type="submit">Afegeix</button>
+    </form>
+    <ul class="people-list" id="people-list"></ul>
+    <button class="link-btn" type="button" id="btn-defaults">Restaura la llista original de monitors</button>
+  </dialog>
+
+  <dialog class="sheet" id="dlg-export" aria-labelledby="dlg-export-title">
+    <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
+    <h2 id="dlg-export-title">Comparteix</h2>
+    <pre class="export" id="export-text"></pre>
+    <div class="btn-row">
+      <button class="btn btn--sm" type="button" id="btn-copy-text">Copia el text</button>
+      <button class="btn btn--sm btn--green" type="button" id="btn-copy-link">Copia l'enllaç</button>
+      <button class="btn btn--sm btn--line" type="button" id="btn-share" hidden>Envia…</button>
+    </div>
+    <p class="muted small">L'enllaç porta aquesta distribució i les restriccions: qui l'obri la veurà igual.</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
