@@ -14,9 +14,10 @@
     { id: "GRANS", cap: 7, img: "grans.jpg", zone: "casa", needs: { c: 1 } },
     { id: "K1", cap: 7, img: "k1.jpg", zone: "fora", needs: { c: 3, m: 3, d: 1 } },
     { id: "K2", cap: 7, img: "k2.jpg", zone: "fora", needs: { c: 3, m: 3, d: 1 } },
-    { id: "RUTA", cap: 6, img: "ruta.jpg", zone: "fora", needs: { c: 3, m: 3 } },
+    { id: "RUTA", cap: 6, img: "ruta.jpg", zone: "fora", needs: { c: 3, m: 3, ruta: 1 } },
   ];
-  // A més, en algun grup de casa hi ha d'haver almenys un director.
+  // A més, entre tots els grups de casa hi ha d'haver almenys un director i un tresorer/a.
+  const CASA_ANY = ["d", "tres"];
   const CASA = GROUPS.filter((g) => g.zone === "casa").map((g) => g.id);
 
   const DEFAULT_PEOPLE = [
@@ -41,7 +42,7 @@
     "Bru": ["c", "Casa"],
     "Eli": ["mc", "Fora casa"],
     "Riki": ["mcd", "K2"],
-    "Ro": ["mc"],
+    "Ro": ["m"],
     "Q. Geis": ["mc", "No Inyi, Ruta o petits, no K1"],
     "Muli": ["md", "K1"],
     "Paupo": ["m", "Fora casa, no Ani"],
@@ -87,6 +88,30 @@
     { key: "d", label: "Director" },
   ];
 
+  // Informació interna (no es pinta a les targetes, només compta als grups).
+  const TRAITS = [
+    { key: "ruta", label: "Experiència a ruta", icon: "🥾" },
+    { key: "tres", label: "Tresorer/a", icon: "💰" },
+  ];
+  const DEFAULT_TRAITS = {
+    ruta: ["Tondes", "Q. Geis", "Quimpu", "Bru"],
+    tres: ["Eli", "Berta"],
+  };
+  const SKILLS = [...CARNETS, ...TRAITS];
+
+  // Restriccions que hi ha d'entrada: parelles que no poden anar juntes...
+  const DEFAULT_RULES = [["Neus", "Quimpu"], ["AinaBo", "Ani"], ["Q. Geis", "Inyi"], ["Ani", "Paupo"]];
+  // ...i on pot (o no pot) anar cadascú. target: un grup, "casa" o "fora".
+  const DEFAULT_PLACE_RULES = [
+    { who: "Qwerty", mode: "only", target: "casa" },
+    { who: "Biel", mode: "only", target: "casa" },
+    { who: "Santi", mode: "not", target: "K2" },
+    { who: "Vicen", mode: "not", target: "K2" },
+  ];
+
+  // Puja-ho quan calgui retocar dades ja desades (vegeu upgrade()).
+  const DATA_VERSION = 2;
+
   const STORAGE_KEY = "cepitu-grups-v1";
   const POOL = "pool";
 
@@ -100,13 +125,14 @@
 
   /* ---------- Estat ---------- */
 
-  let state = load() || normalize(freshState(DEFAULT_PEOPLE));
+  let state = load() || normalize(freshState(DEFAULT_PEOPLE,
+    DEFAULT_RULES.map(([a, b]) => ({ a, b })), {}, DEFAULT_PLACE_RULES.map((r) => ({ ...r }))));
   let selected = null; // monitor triat amb un toc, pendent de tocar-ne el grup
 
-  function freshState(people, rules = [], info = {}) {
+  function freshState(people, rules = [], info = {}, placeRules = []) {
     const groups = { [POOL]: [...people] };
     for (const g of GROUPS) groups[g.id] = [];
-    return { people: [...people], groups, rules, info };
+    return { version: DATA_VERSION, people: [...people], groups, rules, placeRules, info };
   }
 
   // Ordena els carnets sempre igual (c, m, d) i descarta lletres desconegudes.
@@ -117,7 +143,9 @@
   function defaultInfo(name) {
     const [carnets = "", prefs = ""] = DEFAULT_INFO[name] || [];
     const [sex = "", year = null] = DEFAULT_PERSONAL[name] || [];
-    return { carnets: cleanCarnets(carnets), prefs, sex, year };
+    const info = { carnets: cleanCarnets(carnets), prefs, sex, year };
+    for (const t of TRAITS) info[t.key] = DEFAULT_TRAITS[t.key].includes(name);
+    return info;
   }
 
   function cleanSex(v) { return v === "h" || v === "d" ? v : ""; }
@@ -136,7 +164,13 @@
       groups[key] = ((s.groups && s.groups[key]) || []).filter((n) => known.has(n) && !seen.has(n) && seen.add(n));
     }
     for (const n of people) if (!seen.has(n)) groups[POOL].push(n);
-    const rules = (s.rules || []).filter((r) => r && known.has(r.a) && known.has(r.b) && r.a !== r.b);
+    const rules = (s.rules || [])
+      .filter((r) => r && known.has(r.a) && known.has(r.b) && r.a !== r.b)
+      .map((r) => ({ a: r.a, b: r.b }));
+    const targets = ["casa", "fora", ...GROUPS.map((g) => g.id)];
+    const placeRules = (s.placeRules || [])
+      .filter((r) => r && known.has(r.who) && (r.mode === "not" || r.mode === "only") && targets.includes(r.target))
+      .map((r) => ({ who: r.who, mode: r.mode, target: r.target }));
     const info = {};
     for (const n of people) {
       const saved = s.info && s.info[n];
@@ -148,10 +182,28 @@
           // Si el sexe o l'any desats són buits (dades antigues), es completen amb els per defecte.
           sex: cleanSex(saved.sex) || def.sex,
           year: cleanYear(saved.year) || def.year,
+          ...Object.fromEntries(TRAITS.map((t) => [t.key, t.key in saved ? !!saved[t.key] : def[t.key]])),
         }
         : def;
     }
-    return { people, groups, rules, info };
+    return { version: s.version || 1, people, groups, rules, placeRules, info };
+  }
+
+  // Canvis que s'apliquen un sol cop a les dades desades amb una versió anterior.
+  function upgrade(s) {
+    if (s.version < 2) {
+      for (const [a, b] of DEFAULT_RULES) {
+        const exists = s.rules.some((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a));
+        if (!exists && s.info[a] && s.info[b]) s.rules.push({ a, b });
+      }
+      for (const r of DEFAULT_PLACE_RULES) {
+        const exists = s.placeRules.some((x) => x.who === r.who && x.mode === r.mode && x.target === r.target);
+        if (!exists && s.info[r.who]) s.placeRules.push({ ...r });
+      }
+      if (s.info.Ro) s.info.Ro.carnets = s.info.Ro.carnets.replace("c", "");
+    }
+    s.version = DATA_VERSION;
+    return s;
   }
 
   // Adapta dades desades de versions antigues (vegeu RENAMES i DROPPED).
@@ -163,6 +215,8 @@
     const keep = (n) => !(DROPPED.includes(n) && people.includes("Q."));
     const info = s.info && Object.fromEntries(Object.entries(s.info).filter(([n]) => keep(n)).map(([n, v]) => [fix(n), v]));
     return {
+      ...s,
+      placeRules: (s.placeRules || []).filter((r) => keep(r.who)).map((r) => ({ ...r, who: fix(r.who) })),
       people: people.filter(keep).map(fix),
       groups: Object.fromEntries(Object.entries(s.groups || {}).map(([k, l]) => [k, l.filter(keep).map(fix)])),
       rules: (s.rules || []).filter((r) => keep(r.a) && keep(r.b)).map((r) => ({ ...r, a: fix(r.a), b: fix(r.b) })),
@@ -173,7 +227,7 @@
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? normalize(migrate(JSON.parse(raw))) : null;
+      return raw ? upgrade(normalize(migrate(JSON.parse(raw)))) : null;
     } catch { return null; }
   }
 
@@ -195,20 +249,52 @@
     list.splice(Math.min(index, list.length), 0, name);
   }
 
-  // Retorna { byPerson: Map(nom -> [regles]), byGroup: Map(grup -> [regles]) }
+  function zoneOf(groupId) {
+    const g = GROUPS.find((x) => x.id === groupId);
+    return g ? g.zone : null;
+  }
+
+  function targetLabel(target) {
+    return target === "casa" ? "un grup de casa" : target === "fora" ? "un grup de fora" : target;
+  }
+
+  // Restriccions de lloc que es trenquen si `name` va a `groupId`.
+  function placeBreaks(name, groupId) {
+    if (groupId === POOL) return [];
+    return state.placeRules.filter((r) => {
+      if (r.who !== name) return false;
+      const match = r.target === groupId || r.target === zoneOf(groupId);
+      return r.mode === "not" ? match : !match;
+    });
+  }
+
+  function placeText(r) {
+    return r.mode === "not" ? `no pot anar a ${targetLabel(r.target)}` : `ha d'anar a ${targetLabel(r.target)}`;
+  }
+
+  function placeShort(r) {
+    return r.mode === "not" ? "✕ " + r.target : "→ " + r.target;
+  }
+
+  // Retorna { byPerson: Map(nom -> [{short, long}]), byGroup: Map(grup -> [frases]) }
   function conflicts() {
     const byPerson = new Map();
     const byGroup = new Map();
+    const add = (map, key, item) => { if (!map.has(key)) map.set(key, []); map.get(key).push(item); };
     for (const g of GROUPS) {
       const members = new Set(state.groups[g.id]);
       for (const r of state.rules) {
         if (members.has(r.a) && members.has(r.b)) {
-          if (!byGroup.has(g.id)) byGroup.set(g.id, []);
-          byGroup.get(g.id).push(r);
+          add(byGroup, g.id, `${r.a} i ${r.b} no poden anar junts`);
           for (const [p, other] of [[r.a, r.b], [r.b, r.a]]) {
-            if (!byPerson.has(p)) byPerson.set(p, []);
-            byPerson.get(p).push(other);
+            add(byPerson, p, { short: "✕ " + other, long: `No pot anar amb ${other}` });
           }
+        }
+      }
+      for (const n of members) {
+        for (const r of placeBreaks(n, g.id)) {
+          add(byGroup, g.id, `${n} ${placeText(r)}`);
+          add(byPerson, n, { short: placeShort(r), long: placeText(r)[0].toUpperCase() + placeText(r).slice(1) });
         }
       }
     }
@@ -222,6 +308,15 @@
       .map((r) => (r.a === name ? r.b : r.a));
   }
 
+  // Tot el que es trencaria posant `name` a `groupId`, en frases ("no pot anar amb X", "no pot anar a K2").
+  function problems(name, groupId) {
+    const people = wouldConflict(name, groupId).filter((n) => n !== name);
+    return [
+      ...(people.length ? [`no pot anar amb ${people.join(", ")}`] : []),
+      ...placeBreaks(name, groupId).map(placeText),
+    ];
+  }
+
   function commit() {
     save();
     render();
@@ -229,49 +324,54 @@
 
   /* ---------- Carnets mínims per grup ---------- */
 
-  function hasCarnet(name, key) {
-    return (state.info[name] || defaultInfo(name)).carnets.includes(key);
+  // Carnet (c, m, d) o informació interna (ruta, tres).
+  function hasSkill(name, key) {
+    const info = state.info[name] || defaultInfo(name);
+    return TRAITS.some((t) => t.key === key) ? !!info[key] : info.carnets.includes(key);
   }
 
-  function countCarnet(groupId, key) {
-    return state.groups[groupId].filter((n) => hasCarnet(n, key)).length;
+  function countSkill(groupId, key) {
+    return state.groups[groupId].filter((n) => hasSkill(n, key)).length;
   }
 
-  function casaDirectors() {
-    return CASA.reduce((sum, id) => sum + countCarnet(id, "d"), 0);
+  function casaTotal(key) {
+    return CASA.reduce((sum, id) => sum + countSkill(id, key), 0);
   }
 
-  // Quants carnets de cada tipus li falten al grup (0 si ja en té prou).
+  // Quants en falten de cada tipus al grup (0 si ja en té prou).
   function deficit(groupId, key) {
     const g = GROUPS.find((x) => x.id === groupId);
-    if (key === "d" && g.zone === "casa") return casaDirectors() ? 0 : 1;
-    return Math.max(0, (g.needs[key] || 0) - countCarnet(groupId, key));
+    if (CASA_ANY.includes(key) && g.zone === "casa") return casaTotal(key) ? 0 : 1;
+    return Math.max(0, (g.needs[key] || 0) - countSkill(groupId, key));
   }
 
   // Insígnies per a la capçalera de cada grup + llista del que falta en total.
   function requirements() {
     const byGroup = new Map();
     const missing = [];
-    const casaD = casaDirectors();
     for (const g of GROUPS) {
       const items = [];
-      for (const c of CARNETS) {
-        const have = countCarnet(g.id, c.key);
-        const min = g.needs[c.key];
+      for (const k of SKILLS) {
+        const have = countSkill(g.id, k.key);
+        const min = g.needs[k.key];
+        const isCarnet = !k.icon;
+        const casaWide = CASA_ANY.includes(k.key) && g.zone === "casa";
         if (min) {
           const ok = have >= min;
-          items.push({ key: c.key, text: `${have}/${min}`, ok, title: `${c.label}: ${have} de ${min} mínim` });
-          if (!ok) missing.push(`${g.id}: ${min - have} ${c.label.toLowerCase()}`);
-        } else if (c.key === "d" && g.zone === "casa" && !casaD) {
-          items.push({ key: "d", text: "0/1", ok: false, title: "Cal un director en algun grup de casa" });
-        } else if (have) {
+          items.push({ skill: k, text: `${have}/${min}`, ok, title: `${k.label}: ${have} de ${min} mínim` });
+          if (!ok) missing.push(`${g.id}: ${min - have} ${k.label.toLowerCase()}`);
+        } else if (casaWide && !casaTotal(k.key)) {
+          items.push({ skill: k, text: "0/1", ok: false, title: `Cal ${k.label.toLowerCase()} en algun grup de casa` });
+        } else if (have && (isCarnet || casaWide)) {
           // Sense mínim: només es compta quan n'hi ha algun.
-          items.push({ key: c.key, text: String(have), ok: true, title: `${c.label}: ${have}` });
+          items.push({ skill: k, text: String(have), ok: true, title: `${k.label}: ${have}` });
         }
       }
       byGroup.set(g.id, items);
     }
-    if (!casaD) missing.push("Casa: 1 director");
+    for (const k of SKILLS) {
+      if (CASA_ANY.includes(k.key) && !casaTotal(k.key)) missing.push(`Casa: 1 ${k.label.toLowerCase()}`);
+    }
     return { byGroup, missing };
   }
 
@@ -313,11 +413,13 @@
     }
     const text = el("span", { className: "chip__text" }, line);
     const tip = [name + (has.length ? " · " + has.map((c) => c.label).join(", ") : "")];
+    const traits = TRAITS.filter((t) => info[t.key]);
+    if (traits.length) tip.push(traits.map((t) => t.label).join(", "));
     if (info.prefs) tip.push("Preferències: " + info.prefs);
     if (conflictWith && conflictWith.length) {
       node.classList.add("is-conflict");
-      text.append(el("span", { className: "chip__warn", textContent: "✕ " + conflictWith.join(", ") }));
-      tip.push(`No pot anar amb ${conflictWith.join(", ")}`);
+      text.append(el("span", { className: "chip__warn", textContent: conflictWith.map((c) => c.short).join(" ") }));
+      tip.push(...conflictWith.map((c) => c.long));
     }
     node.title = tip.join("\n");
     if (name === selected) node.classList.add("is-selected");
@@ -363,10 +465,10 @@
       if (bad.length) card.classList.add("group--conflict");
       if (n > g.cap) card.classList.add("group--over");
       if (n === g.cap) card.classList.add("group--full");
-      const clash = selected && from !== g.id ? wouldConflict(selected, g.id) : [];
+      const clash = selected && from !== g.id ? problems(selected, g.id) : [];
       if (clash.length) {
         card.classList.add("group--blocked");
-        card.title = `${selected} no pot anar amb ${clash.join(", ")}`;
+        card.title = `${selected} ${clash.join(" i ")}`;
       }
 
       const cap = el("span", { className: "cap" + (status ? " cap--" + status : "") });
@@ -378,7 +480,10 @@
         el("h3", { textContent: g.id }),
         el("div", { className: "reqs" }, ...reqByGroup.get(g.id).map((r) =>
           el("span", { className: "req" + (r.ok ? " req--ok" : " req--bad"), title: r.title },
-            el("i", { className: "dot dot--" + r.key }), r.text))),
+            r.skill.icon
+              ? el("span", { className: "req__icon", textContent: r.skill.icon, ariaHidden: "true" })
+              : el("i", { className: "dot dot--" + r.skill.key }),
+            r.text))),
         cap,
       );
       const meter = el("div", { className: "meter" }, el("span"));
@@ -391,10 +496,7 @@
 
       card.append(head, meter, zone);
       if (bad.length) {
-        card.append(el("ul", { className: "conflicts" }, ...bad.map((r) =>
-          el("li", {}, el("span", {},
-            `${r.a} i ${r.b} no poden anar junts`,
-            r.note ? el("small", { textContent: " · " + r.note }) : null)))));
+        card.append(el("ul", { className: "conflicts" }, ...bad.map((msg) => el("li", {}, el("span", { textContent: msg })))));
       }
       return card;
     }));
@@ -413,7 +515,7 @@
     $("#stats").innerHTML = stats.join("");
 
     const rulesBtn = $("#btn-rules");
-    $("#rules-count").textContent = state.rules.length;
+    $("#rules-count").textContent = state.rules.length + state.placeRules.length;
     rulesBtn.classList.toggle("has-conflict", nConf > 0);
 
     if ($("#dlg-rules").open) renderRules();
@@ -422,9 +524,9 @@
 
   function announceMove(name, to) {
     if (to === POOL) return;
-    const clash = wouldConflict(name, to).filter((n) => n !== name);
+    const clash = problems(name, to);
     const g = GROUPS.find((x) => x.id === to);
-    if (clash.length) toast(`⚠ ${name} no pot anar amb ${clash.join(", ")}`, true);
+    if (clash.length) toast(`⚠ ${name} ${clash.join(" i ")}`, true);
     else if (state.groups[to].length > g.cap) toast(`${to} ja té ${state.groups[to].length} monitors (màxim ${g.cap})`, true);
   }
 
@@ -613,22 +715,23 @@
       const j = Math.floor(Math.random() * (i + 1));
       [pending[i], pending[j]] = [pending[j], pending[i]];
     }
-    // Primer els carnets més escassos (director, conduir, monitor) i els que tenen
-    // restriccions; els que no tenen carnet omplen al final els forats que quedin.
-    const WEIGHT = { d: 8, c: 3, m: 1 };
-    const carnetWeight = (n) => CARNETS.reduce((sum, c) => sum + (hasCarnet(n, c.key) ? WEIGHT[c.key] : 0), 0);
-    const rulesOf = (n) => state.rules.filter((r) => r.a === n || r.b === n).length;
+    // Primer el que és més escàs (director, ruta, tresorer/a, conduir, monitor) i els que
+    // tenen restriccions; els que no aporten res omplen al final els forats que quedin.
+    const WEIGHT = { d: 8, ruta: 6, tres: 6, c: 3, m: 1 };
+    const carnetWeight = (n) => SKILLS.reduce((sum, k) => sum + (hasSkill(n, k.key) ? WEIGHT[k.key] : 0), 0);
+    const rulesOf = (n) => state.rules.filter((r) => r.a === n || r.b === n).length
+      + state.placeRules.filter((r) => r.who === n).length;
     pending.sort((a, b) => carnetWeight(b) + rulesOf(b) * 2 - (carnetWeight(a) + rulesOf(a) * 2));
 
     const left = [];
     for (const name of pending) {
       const options = GROUPS
-        .filter((g) => state.groups[g.id].length < g.cap && !wouldConflict(name, g.id).length)
+        .filter((g) => state.groups[g.id].length < g.cap && !problems(name, g.id).length)
         .map((g) => {
           // Quant ajuda aquest monitor a cobrir el que li falta al grup.
-          const helps = CARNETS.reduce((sum, c) => sum + (hasCarnet(name, c.key) && deficit(g.id, c.key) ? WEIGHT[c.key] : 0), 0);
+          const helps = SKILLS.reduce((sum, k) => sum + (hasSkill(name, k.key) && deficit(g.id, k.key) ? WEIGHT[k.key] : 0), 0);
           // Els grups que encara han d'aconseguir carnets reserven les places per a qui en té.
-          const needed = CARNETS.reduce((sum, c) => sum + deficit(g.id, c.key), 0);
+          const needed = SKILLS.reduce((sum, k) => sum + deficit(g.id, k.key), 0);
           const free = g.cap - state.groups[g.id].length;
           const room = helps ? free : free - needed;
           return { g, score: helps * 100 + room + Math.random() * 0.5 };
@@ -649,7 +752,7 @@
 
   $("#btn-reset").addEventListener("click", () => {
     if (!confirm("Vols treure tots els monitors dels grups? Les restriccions es mantenen.")) return;
-    state = freshState(state.people, state.rules, state.info);
+    state = freshState(state.people, state.rules, state.info, state.placeRules);
     commit();
     toast("Grups buidats");
   });
@@ -675,52 +778,85 @@
     return g === POOL ? "sense grup" : g;
   }
 
+  function fillTargets(select) {
+    const value = select.value;
+    select.replaceChildren(
+      el("option", { value: "casa", textContent: "Casa" }),
+      el("option", { value: "fora", textContent: "Fora" }),
+      ...GROUPS.map((g) => el("option", { value: g.id, textContent: g.id })));
+    if (value) select.value = value;
+  }
+
+  function ruleItem(names, meta, broken, ref, label) {
+    const del = el("button", { type: "button", className: "icon-btn", innerHTML: ICON_TRASH, ariaLabel: "Esborra " + label });
+    del.dataset.rule = ref;
+    const li = el("li", {}, el("div", {}, names, el("div", { className: "meta", textContent: meta })), del);
+    if (broken) li.classList.add("is-broken");
+    return li;
+  }
+
   function renderRules() {
     fillSelect($("#rule-a"), $("#rule-a").value);
     fillSelect($("#rule-b"), $("#rule-b").value);
-    const list = $("#rule-list");
-    if (!state.rules.length) {
-      list.replaceChildren(el("li", { className: "empty", textContent: "Encara no hi ha cap restricció." }));
-      return;
-    }
-    list.replaceChildren(...state.rules.map((r, i) => {
+    fillSelect($("#place-who"), $("#place-who").value);
+    fillTargets($("#place-target"));
+
+    const pairs = state.rules.map((r, i) => {
       const ga = groupOf(r.a);
-      const gb = groupOf(r.b);
-      const broken = ga !== POOL && ga === gb;
-      const meta = broken
-        ? `⚠ Ara mateix tots dos són a ${ga}`
-        : `${r.a}: ${where(r.a)} · ${r.b}: ${where(r.b)}`;
+      const broken = ga !== POOL && ga === groupOf(r.b);
+      const meta = broken ? `⚠ Ara mateix tots dos són a ${ga}` : `${r.a}: ${where(r.a)} · ${r.b}: ${where(r.b)}`;
       const names = el("div", { className: "names" }, r.a, el("span", { textContent: "✕" }), r.b);
-      const del = el("button", { type: "button", className: "icon-btn", innerHTML: ICON_TRASH, ariaLabel: `Esborra ${r.a} ✕ ${r.b}` });
-      del.dataset.rule = i;
-      const li = el("li", {}, el("div", {}, names,
-        el("div", { className: "meta", textContent: (r.note ? r.note + " · " : "") + meta })), del);
-      if (broken) li.classList.add("is-broken");
-      return li;
-    }));
+      return ruleItem(names, meta, broken, "p" + i, `${r.a} ✕ ${r.b}`);
+    });
+    $("#rule-list").replaceChildren(...(pairs.length ? pairs
+      : [el("li", { className: "empty", textContent: "Cap parella." })]));
+
+    const places = state.placeRules.map((r, i) => {
+      const g = groupOf(r.who);
+      const broken = placeBreaks(r.who, g).includes(r);
+      const meta = broken ? `⚠ Ara mateix és a ${g}` : `${r.who}: ${where(r.who)}`;
+      const names = el("div", { className: "names" }, r.who, " ",
+        el("span", { className: "mode", textContent: r.mode === "not" ? "no pot anar a" : "ha d'anar a" }), " ",
+        r.target === "casa" ? "casa" : r.target === "fora" ? "fora" : r.target);
+      return ruleItem(names, meta, broken, "g" + i, `${r.who} ${placeText(r)}`);
+    });
+    $("#place-list").replaceChildren(...(places.length ? places
+      : [el("li", { className: "empty", textContent: "Cap restricció de grup." })]));
   }
 
   $("#rule-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const a = $("#rule-a").value;
     const b = $("#rule-b").value;
-    const note = $("#rule-note").value.trim();
     if (!a || !b) return;
     if (a === b) { toast("Tria dos monitors diferents", true); return; }
     if (state.rules.some((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a))) {
       toast("Aquesta restricció ja existeix", true); return;
     }
-    state.rules.push(note ? { a, b, note } : { a, b });
+    state.rules.push({ a, b });
     $("#rule-b").value = "";
-    $("#rule-note").value = "";
     commit();
     toast(`${a} i ${b} no aniran junts`);
   });
 
-  $("#rule-list").addEventListener("click", (e) => {
+  $("#place-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const rule = { who: $("#place-who").value, mode: $("#place-mode").value, target: $("#place-target").value };
+    if (!rule.who) return;
+    if (state.placeRules.some((r) => r.who === rule.who && r.mode === rule.mode && r.target === rule.target)) {
+      toast("Aquesta restricció ja existeix", true); return;
+    }
+    state.placeRules.push(rule);
+    $("#place-who").value = "";
+    commit();
+    toast(`${rule.who} ${placeText(rule)}`);
+  });
+
+  dlgRules.addEventListener("click", (e) => {
     const b = e.target.closest("[data-rule]");
     if (!b) return;
-    state.rules.splice(Number(b.dataset.rule), 1);
+    const i = Number(b.dataset.rule.slice(1));
+    (b.dataset.rule[0] === "p" ? state.rules : state.placeRules).splice(i, 1);
     commit();
   });
 
@@ -742,12 +878,11 @@
     }
     list.replaceChildren(...state.people.map((n) => {
       const info = state.info[n];
-      const toggles = el("span", { className: "carnet-toggles" }, ...CARNETS.map((c) => {
-        const on = info.carnets.includes(c.key);
-        const b = el("button", { type: "button", className: "carnet", title: c.label, ariaLabel: `${c.label}: ${n}` },
-          el("i", { className: "dot dot--" + c.key }), c.key.toUpperCase());
-        b.setAttribute("aria-pressed", on);
-        b.dataset.carnet = c.key;
+      const toggles = el("span", { className: "carnet-toggles" }, ...SKILLS.map((k) => {
+        const b = el("button", { type: "button", className: "carnet", title: k.label, ariaLabel: `${k.label}: ${n}` },
+          ...(k.icon ? [k.icon] : [el("i", { className: "dot dot--" + k.key }), k.key.toUpperCase()]));
+        b.setAttribute("aria-pressed", hasSkill(n, k.key));
+        b.dataset.carnet = k.key;
         b.dataset.who = n;
         return b;
       }));
@@ -775,7 +910,7 @@
     if (state.people.some((n) => n.toLowerCase() === name.toLowerCase())) { toast(`${name} ja hi és`, true); return; }
     state.people.push(name);
     state.groups[POOL].push(name);
-    state.info[name] = { carnets: "", prefs: "", sex: "", year: null };
+    state.info[name] = { carnets: "", prefs: "", sex: "", year: null, ruta: false, tres: false };
     input.value = "";
     commit();
     toast(`${name} afegit a «Sense grup»`);
@@ -786,7 +921,8 @@
     if (t) {
       const info = state.info[t.dataset.who];
       const k = t.dataset.carnet;
-      info.carnets = cleanCarnets(info.carnets.includes(k) ? info.carnets.replace(k, "") : info.carnets + k);
+      if (TRAITS.some((x) => x.key === k)) info[k] = !info[k];
+      else info.carnets = cleanCarnets(info.carnets.includes(k) ? info.carnets.replace(k, "") : info.carnets + k);
       commit();
       return;
     }
@@ -796,6 +932,7 @@
     if (!confirm(`Vols treure ${name} de la llista? També se n'esborraran les restriccions.`)) return;
     state.people = state.people.filter((n) => n !== name);
     state.rules = state.rules.filter((r) => r.a !== name && r.b !== name);
+    state.placeRules = state.placeRules.filter((r) => r.who !== name);
     for (const key in state.groups) state.groups[key] = state.groups[key].filter((n) => n !== name);
     delete state.info[name];
     commit();
@@ -819,7 +956,7 @@
 
   $("#btn-defaults").addEventListener("click", () => {
     if (!confirm("Es tornarà a la llista original de monitors i es buidaran els grups. Les restriccions entre monitors que hi siguin es mantenen. Continuar?")) return;
-    state = normalize(freshState(DEFAULT_PEOPLE, state.rules, state.info));
+    state = normalize(freshState(DEFAULT_PEOPLE, state.rules, state.info, state.placeRules));
     commit();
   });
 
@@ -840,5 +977,6 @@
     toastTimer = setTimeout(() => t.classList.remove("is-on"), bad ? 3600 : 2400);
   }
 
+  save(); // deixa desades les dades ja actualitzades (vegeu upgrade())
   render();
 })();

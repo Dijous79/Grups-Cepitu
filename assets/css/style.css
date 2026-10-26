@@ -390,7 +390,11 @@ p { margin: 0 0 1em; text-wrap: pretty; }
   background: var(--paper); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;
 }
 .rule-form__x { color: var(--red); font-weight: 800; }
-.rule-form input, .rule-form .btn { grid-column: 1 / -1; }
+.rule-form .btn { grid-column: 1 / -1; }
+.place-form { grid-template-columns: 1fr 1fr; }
+.place-form #place-who { grid-column: 1 / -1; }
+.sheet__sub { font-size: 1.05rem; margin: 18px 0 8px; }
+.rule-list .names .mode { color: var(--red); font-weight: 700; margin: 0; }
 select, input[type="text"] {
   width: 100%; min-height: 44px; padding: 8px 12px;
   border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--white);
@@ -503,3 +507,6 @@ body.is-picking .group:hover .dropzone { background: var(--cream-soft); }
   .group .chip__warn { font-size: .6rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .group .dropzone:empty::after { font-size: .75rem; padding: 2px 4px; }
 }
+
+/* Comptadors d'informació interna (ruta, tresorer/a): icona en lloc de punt */
+.req__icon { font-size: .68rem; line-height: 1; }

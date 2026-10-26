@@ -71,21 +71,34 @@
   <dialog class="sheet" id="dlg-rules" aria-labelledby="dlg-rules-title">
     <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
     <h2 id="dlg-rules-title">Restriccions</h2>
-    <p class="muted">Parelles de monitors que <strong>no poden anar junts</strong>. Si coincideixen al mateix grup, es marcaran en vermell.</p>
+    <p class="muted">Si es trenca alguna restricció, els monitors i el grup es marquen en vermell.</p>
+
+    <h3 class="sheet__sub">No poden anar junts</h3>
     <form class="rule-form" id="rule-form">
       <select id="rule-a" aria-label="Primer monitor" required></select>
       <span class="rule-form__x" aria-hidden="true">✕</span>
       <select id="rule-b" aria-label="Segon monitor" required></select>
-      <input id="rule-note" type="text" maxlength="60" placeholder="Motiu (opcional)" aria-label="Motiu">
       <button class="btn btn--sm" type="submit">Afegeix</button>
     </form>
     <ul class="rule-list" id="rule-list"></ul>
+
+    <h3 class="sheet__sub">On pot anar cadascú</h3>
+    <form class="rule-form place-form" id="place-form">
+      <select id="place-who" aria-label="Monitor" required></select>
+      <select id="place-mode" aria-label="Tipus">
+        <option value="not">no pot anar a</option>
+        <option value="only">ha d'anar a</option>
+      </select>
+      <select id="place-target" aria-label="Grup"></select>
+      <button class="btn btn--sm" type="submit">Afegeix</button>
+    </form>
+    <ul class="rule-list" id="place-list"></ul>
   </dialog>
 
   <dialog class="sheet" id="dlg-people" aria-labelledby="dlg-people-title">
     <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
     <h2 id="dlg-people-title">Monitors</h2>
-    <p class="muted small">Toca C, M o D per marcar els carnets (conduir, monitor, director). Les preferències de moment només es guarden.</p>
+    <p class="muted small">Toca C, M o D per marcar els carnets (conduir, monitor, director), 🥾 si ha fet ruta i 💰 si és tresorer/a. Les preferències de moment només es guarden.</p>
     <form class="add-form" id="add-form">
       <input id="add-name" type="text" maxlength="24" placeholder="Nom del monitor" aria-label="Nom del monitor" required>
       <button class="btn btn--sm btn--green" type="submit">Afegeix</button>
