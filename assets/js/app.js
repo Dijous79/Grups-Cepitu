@@ -23,8 +23,13 @@
     "MC", "Chali", "Inyi", "Tondes", "Bru", "Eli", "Riki", "Ro", "Q. Geis",
     "Muli", "Paupo", "Ani", "Benet", "Qwerty", "Neus", "Santi", "Quimpu", "Quimta", "Cris",
     "Ivet", "Berta", "Marvi", "Biel", "AinaBo", "Max", "T. Forre", "Judit", "Vicen", "Bellau",
-    "Ton", "Erica", "MartinaBo", "AinCo", "Lucas", "Pauri", "MartinaFo", "Anglarill", "Herruzo", "Dani",
+    "Ton", "Erica", "MartinaBo", "AinaCo", "Lucas", "Pauri", "MartinaFo", "Anglarill", "Herruzo", "Dani",
   ];
+
+  // Noms que han canviat respecte de versions antigues (dades desades o enllaços).
+  // "Geis" s'esborra perquè "Q." i "Geis" eren la mateixa persona: "Q. Geis".
+  const RENAMES = { "Q.": "Q. Geis", "AinCo": "AinaCo" };
+  const DROPPED = ["Geis"];
 
   // Carnets (c = conduir, m = monitor, d = director) i preferències de cada monitor.
   // De moment les preferències només es guarden i es mostren; no s'apliquen enlloc.
@@ -149,17 +154,19 @@
     return { people, groups, rules, info };
   }
 
-  // Versions antigues tenien "Q." i "Geis" com a dos monitors: és una sola persona.
+  // Adapta dades desades o enllaços de versions antigues (vegeu RENAMES i DROPPED).
   function migrate(s) {
     const people = s.people || [];
-    if (!people.includes("Q.") || !people.includes("Geis") || people.includes("Q. Geis")) return s;
-    const fix = (n) => (n === "Q." ? "Q. Geis" : n);
-    const drop = (n) => n !== "Geis";
+    const stale = people.filter((n) => (RENAMES[n] && !people.includes(RENAMES[n])) || (DROPPED.includes(n) && people.includes("Q.")));
+    if (!stale.length) return s;
+    const fix = (n) => (RENAMES[n] && !people.includes(RENAMES[n]) ? RENAMES[n] : n);
+    const keep = (n) => !(DROPPED.includes(n) && people.includes("Q."));
+    const info = s.info && Object.fromEntries(Object.entries(s.info).filter(([n]) => keep(n)).map(([n, v]) => [fix(n), v]));
     return {
-      people: people.filter(drop).map(fix),
-      groups: Object.fromEntries(Object.entries(s.groups || {}).map(([k, l]) => [k, l.filter(drop).map(fix)])),
-      rules: (s.rules || []).filter((r) => drop(r.a) && drop(r.b)).map((r) => ({ ...r, a: fix(r.a), b: fix(r.b) })),
-      info: s.info,
+      people: people.filter(keep).map(fix),
+      groups: Object.fromEntries(Object.entries(s.groups || {}).map(([k, l]) => [k, l.filter(keep).map(fix)])),
+      rules: (s.rules || []).filter((r) => keep(r.a) && keep(r.b)).map((r) => ({ ...r, a: fix(r.a), b: fix(r.b) })),
+      info,
     };
   }
 
