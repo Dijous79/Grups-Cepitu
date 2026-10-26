@@ -100,7 +100,7 @@
   const SKILLS = [...CARNETS, ...TRAITS];
 
   // Restriccions que hi ha d'entrada: parelles que no poden anar juntes...
-  const DEFAULT_RULES = [["Neus", "Quimpu"], ["AinaBo", "Ani"], ["Q. Geis", "Inyi"], ["Ani", "Paupo"]];
+  const DEFAULT_RULES = [["Neus", "Quimpu"], ["AinaBo", "Ani"], ["Q. Geis", "Inyi"], ["Ani", "Paupo"], ["Qwerty", "Santi"]];
   // ...i on pot (o no pot) anar cadascú. target: un grup, "casa" o "fora".
   const DEFAULT_PLACE_RULES = [
     { who: "Qwerty", mode: "only", target: "casa" },
