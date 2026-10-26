@@ -90,8 +90,8 @@
 
   // Informació interna (no es pinta a les targetes, només compta als grups).
   const TRAITS = [
-    { key: "ruta", label: "Experiència a ruta", icon: "🥾" },
-    { key: "tres", label: "Tresorer/a", icon: "💰" },
+    { key: "ruta", label: "Experiència a ruta", tag: "R" },
+    { key: "tres", label: "Tresorer/a", tag: "T" },
   ];
   const DEFAULT_TRAITS = {
     ruta: ["Tondes", "Q. Geis", "Quimpu", "Bru"],
@@ -354,7 +354,7 @@
       for (const k of SKILLS) {
         const have = countSkill(g.id, k.key);
         const min = g.needs[k.key];
-        const isCarnet = !k.icon;
+        const isCarnet = !k.tag;
         const casaWide = CASA_ANY.includes(k.key) && g.zone === "casa";
         if (min) {
           const ok = have >= min;
@@ -480,8 +480,8 @@
         el("h3", { textContent: g.id }),
         el("div", { className: "reqs" }, ...reqByGroup.get(g.id).map((r) =>
           el("span", { className: "req" + (r.ok ? " req--ok" : " req--bad"), title: r.title },
-            r.skill.icon
-              ? el("span", { className: "req__icon", textContent: r.skill.icon, ariaHidden: "true" })
+            r.skill.tag
+              ? el("i", { className: "tag", textContent: r.skill.tag })
               : el("i", { className: "dot dot--" + r.skill.key }),
             r.text))),
         cap,
@@ -880,7 +880,7 @@
       const info = state.info[n];
       const toggles = el("span", { className: "carnet-toggles" }, ...SKILLS.map((k) => {
         const b = el("button", { type: "button", className: "carnet", title: k.label, ariaLabel: `${k.label}: ${n}` },
-          ...(k.icon ? [k.icon] : [el("i", { className: "dot dot--" + k.key }), k.key.toUpperCase()]));
+          ...(k.tag ? [el("i", { className: "tag", textContent: k.tag })] : [el("i", { className: "dot dot--" + k.key }), k.key.toUpperCase()]));
         b.setAttribute("aria-pressed", hasSkill(n, k.key));
         b.dataset.carnet = k.key;
         b.dataset.who = n;

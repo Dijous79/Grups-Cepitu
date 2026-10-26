@@ -508,5 +508,12 @@ body.is-picking .group:hover .dropzone { background: var(--cream-soft); }
   .group .dropzone:empty::after { font-size: .75rem; padding: 2px 4px; }
 }
 
-/* Comptadors d'informació interna (ruta, tresorer/a): icona en lloc de punt */
-.req__icon { font-size: .68rem; line-height: 1; }
+/* Informació interna (ruta, tresorer/a): etiqueta amb lletra en lloc de punt */
+.tag {
+  display: inline-grid; place-items: center;
+  min-width: 11px; height: 11px; padding: 0 2px;
+  border: 1.3px solid currentColor; border-radius: 3px;
+  font: 800 .52rem/1 "Mulish", sans-serif; font-style: normal;
+}
+.carnet .tag { opacity: .35; }
+.carnet[aria-pressed="true"] .tag { opacity: 1; }
