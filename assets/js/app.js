@@ -26,15 +26,6 @@
   const STORAGE_KEY = "cepitu-grups-v1";
   const POOL = "pool";
 
-  const AVATARS = [
-    ["#e3efe5", "#12301c"],
-    ["#fbe9c8", "#7a4b0c"],
-    ["#fde3d8", "#c4502a"],
-    ["#dde9f4", "#1f4a73"],
-    ["#ece3f5", "#5b3a7a"],
-    ["#dff0ea", "#1e5a4c"],
-  ];
-
   const $ = (sel, root = document) => root.querySelector(sel);
   const el = (tag, props = {}, ...children) => {
     const node = Object.assign(document.createElement(tag), props);
@@ -127,27 +118,9 @@
 
   /* ---------- Pintat ---------- */
 
-  function hash(str) {
-    let h = 0;
-    for (const ch of str) h = (h * 31 + ch.codePointAt(0)) >>> 0;
-    return h;
-  }
-
-  function initials(name) {
-    const words = name.split(/[\s.]+/).filter(Boolean);
-    if (words.length > 1) return (words[0][0] + words[1][0]).toUpperCase();
-    const w = words[0] || name;
-    const inner = w.slice(1).search(/[A-ZÀ-Ý]/);
-    if (inner !== -1) return (w[0] + w[inner + 1]).toUpperCase();
-    return w.length <= 2 ? w.toUpperCase() : w[0].toUpperCase() + w[1].toLowerCase();
-  }
-
   function chip(name, conflictWith) {
-    const [bg, ink] = AVATARS[hash(name) % AVATARS.length];
     const node = el("button", { type: "button", className: "chip" });
     node.dataset.name = name;
-    node.style.setProperty("--av", bg);
-    node.style.setProperty("--av-ink", ink);
     const text = el("span", { className: "chip__text" }, el("span", { textContent: name }));
     if (conflictWith && conflictWith.length) {
       node.classList.add("is-conflict");
@@ -155,7 +128,7 @@
       node.title = `${name} no pot anar amb ${conflictWith.join(", ")}`;
     }
     if (name === selected) node.classList.add("is-selected");
-    node.append(el("span", { className: "chip__av", textContent: initials(name), ariaHidden: "true" }), text);
+    node.append(text);
     return node;
   }
 
@@ -164,7 +137,7 @@
 
     // Sense grup
     const pool = $("#pool");
-    pool.dataset.empty = "Tots els monitors tenen grup 🎉";
+    pool.dataset.empty = "Tothom té grup 🎉";
     pool.replaceChildren(...state.groups[POOL].map((n) => chip(n)));
     $("#pool-count").textContent = state.groups[POOL].length;
 
@@ -196,7 +169,7 @@
 
       const zone = el("div", { className: "dropzone" });
       zone.dataset.drop = g.id;
-      zone.dataset.empty = selected ? "Toca aquí per posar-hi " + selected : "Arrossega monitors aquí";
+      zone.dataset.empty = selected ? "Toca per posar-hi " + selected : "Buit";
       zone.append(...members.map((m) => chip(m, byPerson.get(m))));
 
       card.append(head, meter, zone);
@@ -214,12 +187,12 @@
     const nConf = [...byGroup.values()].reduce((s, l) => s + l.length, 0);
     const over = GROUPS.filter((g) => state.groups[g.id].length > g.cap);
     const stats = [
-      `<span class="stat${placed === state.people.length ? " stat--ok" : ""}"><strong>${placed}/${state.people.length}</strong> amb grup</span>`,
+      `<span class="stat${placed === state.people.length ? " stat--ok" : ""}" title="Monitors amb grup"><strong>${placed}/${state.people.length}</strong></span>`,
       nConf
-        ? `<span class="stat stat--bad"><strong>${nConf}</strong> ${nConf === 1 ? "restricció trencada" : "restriccions trencades"}</span>`
-        : `<span class="stat stat--ok">✓ Cap restricció trencada</span>`,
+        ? `<span class="stat stat--bad" title="Restriccions trencades">⚠ <strong>${nConf}</strong></span>`
+        : `<span class="stat stat--ok" title="Cap restricció trencada">✓</span>`,
     ];
-    if (over.length) stats.push(`<span class="stat">Massa gent a <strong>${over.map((g) => g.id).join(", ")}</strong></span>`);
+    if (over.length) stats.push(`<span class="stat stat--over" title="Grups amb massa gent">+ ${over.map((g) => g.id).join(", ")}</span>`);
     $("#stats").innerHTML = stats.join("");
 
     const rulesBtn = $("#btn-rules");
