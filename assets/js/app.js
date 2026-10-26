@@ -428,6 +428,18 @@
   }
 
   function render() {
+    // Es refà tota la pàgina: guarda l'scroll perquè alguns navegadors de mòbil, en treure
+    // la targeta que tenia el focus, salten a dalt de tot.
+    const scrollY = window.scrollY;
+    if (document.activeElement && document.activeElement.closest(".chip")) document.activeElement.blur();
+    paint();
+    if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
+    requestAnimationFrame(() => {
+      if (!drag && Math.abs(window.scrollY - scrollY) > 1) window.scrollTo(0, scrollY);
+    });
+  }
+
+  function paint() {
     const { byPerson, byGroup } = conflicts();
     const { byGroup: reqByGroup } = requirements();
     if (selected && !state.people.includes(selected)) selected = null;
