@@ -226,9 +226,11 @@
           const ok = have >= min;
           items.push({ key: c.key, text: `${have}/${min}`, ok, title: `${c.label}: ${have} de ${min} mínim` });
           if (!ok) missing.push(`${g.id}: ${min - have} ${c.label.toLowerCase()}`);
-        } else if (c.key === "d" && g.zone === "casa") {
-          if (!casaD) items.push({ key: "d", text: "0/1", ok: false, title: "Cal un director en algun grup de casa" });
-          else if (have) items.push({ key: "d", text: String(have), ok: true, title: `Director: ${have}` });
+        } else if (c.key === "d" && g.zone === "casa" && !casaD) {
+          items.push({ key: "d", text: "0/1", ok: false, title: "Cal un director en algun grup de casa" });
+        } else if (have) {
+          // Sense mínim: només es compta quan n'hi ha algun.
+          items.push({ key: c.key, text: String(have), ok: true, title: `${c.label}: ${have}` });
         }
       }
       byGroup.set(g.id, items);
