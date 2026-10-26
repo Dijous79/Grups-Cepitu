@@ -61,6 +61,21 @@
     "Erica": ["", "Fora casa"],
     "MartinaBo": ["mc"],
   };
+
+  // Sexe (h = home, d = dona) i any de naixement.
+  const DEFAULT_PERSONAL = {
+    "MC": ["h", 2002], "Chali": ["h", 2003], "Inyi": ["d", 2003], "Tondes": ["h", 2003],
+    "Bru": ["h", 2004], "Eli": ["d", 2003], "Riki": ["h", 2004], "Ro": ["d", 2005],
+    "Q. Geis": ["d", 2004], "Muli": ["d", 2004], "Paupo": ["h", 2004], "Ani": ["h", 2004],
+    "Benet": ["h", 2005], "Qwerty": ["d", 2005], "Neus": ["d", 2005], "Santi": ["h", 2006],
+    "Quimpu": ["h", 2005], "Cris": ["d", 2005], "Ivet": ["d", 2005], "Berta": ["d", 2005],
+    "Marvi": ["d", 2005], "Quimta": ["h", 2005], "Biel": ["h", 2006], "AinaBo": ["d", 2006],
+    "Max": ["h", 2006], "T. Forre": ["h", 2006], "Judit": ["d", 2006], "Vicen": ["h", 2007],
+    "Ton": ["h", 2007], "Bellau": ["h", 2007], "Erica": ["d", 2007], "MartinaBo": ["d", 2007],
+    "Pauri": ["h", 2008], "Lucas": ["h", 2008], "Anglarill": ["d", 2008], "MartinaFo": ["d", 2008],
+    "Dani": ["d", 2008], "Herruzo": ["d", 2008],
+  };
+  const YOUNGEST = 2008; // els d'aquest any es pinten de rosa
   const CARNETS = [
     { key: "c", label: "Conduir" },
     { key: "m", label: "Monitor" },
@@ -96,7 +111,14 @@
 
   function defaultInfo(name) {
     const [carnets = "", prefs = ""] = DEFAULT_INFO[name] || [];
-    return { carnets: cleanCarnets(carnets), prefs };
+    const [sex = "", year = null] = DEFAULT_PERSONAL[name] || [];
+    return { carnets: cleanCarnets(carnets), prefs, sex, year };
+  }
+
+  function cleanSex(v) { return v === "h" || v === "d" ? v : ""; }
+  function cleanYear(v) {
+    const y = parseInt(v, 10);
+    return y >= 1950 && y <= 2030 ? y : null;
   }
 
   // Garanteix que cada monitor és exactament a una llista.
@@ -113,9 +135,16 @@
     const info = {};
     for (const n of people) {
       const saved = s.info && s.info[n];
+      const def = defaultInfo(n);
       info[n] = saved
-        ? { carnets: cleanCarnets(saved.carnets), prefs: String(saved.prefs || "") }
-        : defaultInfo(n);
+        ? {
+          carnets: cleanCarnets(saved.carnets),
+          prefs: String(saved.prefs || ""),
+          // Dades desades abans que existissin aquests camps: es completen amb les per defecte.
+          sex: "sex" in saved ? cleanSex(saved.sex) : def.sex,
+          year: "year" in saved ? cleanYear(saved.year) : def.year,
+        }
+        : def;
     }
     return { people, groups, rules, info };
   }
@@ -239,12 +268,42 @@
     return { byGroup, missing };
   }
 
+  /* ---------- Ordre dins dels calaixos: homes a l'esquerra, dones a la dreta, per edat ---------- */
+
+  const SEXES = ["h", "d"];
+
+  function sexOf(name) { return (state.info[name] || defaultInfo(name)).sex; }
+
+  function byAge(a, b) {
+    const ya = (state.info[a] || {}).year || 9999;
+    const yb = (state.info[b] || {}).year || 9999;
+    return ya - yb || a.localeCompare(b, "ca");
+  }
+
+  // A «Sense grup» van tots seguits: primer homes, després dones, després els sense dades.
+  function bySexThenAge(a, b) {
+    const rank = (n) => { const i = SEXES.indexOf(sexOf(n)); return i === -1 ? 2 : i; };
+    return rank(a) - rank(b) || byAge(a, b);
+  }
+
+  // Omple una zona de grup amb dues columnes (homes | dones) i, sota, els que no tenen sexe.
+  function fillColumns(zone, members, makeChip) {
+    if (!members.length) return;
+    for (const sx of SEXES) {
+      zone.append(el("div", { className: "col col--" + sx },
+        ...members.filter((n) => sexOf(n) === sx).sort(byAge).map(makeChip)));
+    }
+    const rest = members.filter((n) => !SEXES.includes(sexOf(n))).sort(byAge);
+    if (rest.length) zone.append(el("div", { className: "col col--x" }, ...rest.map(makeChip)));
+  }
+
   /* ---------- Pintat ---------- */
 
   function chip(name, conflictWith) {
     const node = el("button", { type: "button", className: "chip" });
     node.dataset.name = name;
     const info = state.info[name] || defaultInfo(name);
+    if (info.year === YOUNGEST) node.classList.add("chip--young");
     const line = el("span", { className: "chip__name", textContent: name });
     const has = CARNETS.filter((c) => info.carnets.includes(c.key));
     if (has.length) {
@@ -275,7 +334,7 @@
     // Sense grup
     const pool = $("#pool");
     pool.dataset.empty = "Tothom té grup 🎉";
-    pool.replaceChildren(...state.groups[POOL].map((n) => chip(n)));
+    pool.replaceChildren(...[...state.groups[POOL]].sort(bySexThenAge).map((n) => chip(n)));
     $("#pool-count").textContent = state.groups[POOL].length;
 
     // Grups
@@ -315,7 +374,7 @@
       const zone = el("div", { className: "dropzone" });
       zone.dataset.drop = g.id;
       zone.dataset.empty = selected ? "Toca per posar-hi " + selected : "Buit";
-      zone.append(...members.map((m) => chip(m, byPerson.get(m))));
+      fillColumns(zone, members, (m) => chip(m, byPerson.get(m)));
 
       card.append(head, meter, zone);
       if (bad.length) {
@@ -416,6 +475,7 @@
     const r = drag.node.getBoundingClientRect();
     drag.offX = drag.x0 - r.left;
     drag.offY = drag.y0 - r.top;
+    document.querySelectorAll(".chip--ghost").forEach((g) => g.remove());
     const ghost = drag.node.cloneNode(true);
     ghost.classList.add("chip--ghost");
     ghost.classList.remove("is-flash");
@@ -446,15 +506,17 @@
     if (!zone) return;
     zone.classList.add("is-over");
 
-    // Busca la targeta davant de la qual s'ha d'inserir (ordre de lectura).
+    // L'ordre és automàtic (sexe i edat): la previsualització posa la targeta on quedarà.
+    const name = drag.name;
+    const isPool = zone.dataset.drop === POOL;
+    const box = isPool ? zone : zone.querySelector(".col--" + (sexOf(name) || "x")) || zone;
+    const cmp = isPool ? bySexThenAge : byAge;
     let ref = null;
-    for (const c of zone.querySelectorAll(".chip")) {
-      if (c === drag.node) continue;
-      const r = c.getBoundingClientRect();
-      if (drag.y < r.top || (drag.y <= r.bottom && drag.x < r.left + r.width / 2)) { ref = c; break; }
+    for (const c of box.querySelectorAll(":scope > .chip")) {
+      if (c !== drag.node && cmp(name, c.dataset.name) < 0) { ref = c; break; }
     }
-    if (drag.node.parentElement !== zone || drag.node.nextElementSibling !== ref) {
-      zone.insertBefore(drag.node, ref);
+    if (drag.node.parentElement !== box || drag.node.nextElementSibling !== ref) {
+      box.insertBefore(drag.node, ref);
     }
   }
 
@@ -477,12 +539,11 @@
     suppressClickUntil = Date.now() + 400;
     drag = null;
 
-    const zone = node.parentElement;
-    if (cancelled || !zone || !zone.dataset.drop) { render(); return; }
+    const zone = node.closest("[data-drop]");
+    if (cancelled || !zone) { render(); return; }
     const to = zone.dataset.drop;
-    const index = [...zone.querySelectorAll(".chip")].indexOf(node);
     const from = groupOf(name);
-    move(name, to, index);
+    move(name, to);
     if (from !== to) announceMove(name, to);
     commit();
     if (from !== to) flash(name);
@@ -676,11 +737,19 @@
         b.dataset.who = n;
         return b;
       }));
+      const sex = el("select", { className: "sex", ariaLabel: "Sexe de " + n },
+        el("option", { value: "", textContent: "–" }),
+        el("option", { value: "h", textContent: "H" }),
+        el("option", { value: "d", textContent: "D" }));
+      sex.value = info.sex;
+      sex.dataset.who = n;
+      const year = el("input", { type: "number", className: "year", min: 1950, max: 2030, value: info.year || "", placeholder: "Any", ariaLabel: "Any de naixement de " + n });
+      year.dataset.who = n;
       const prefs = el("input", { type: "text", className: "prefs", value: info.prefs, maxLength: 120, placeholder: "Preferències", ariaLabel: "Preferències de " + n });
       prefs.dataset.who = n;
       const del = el("button", { type: "button", className: "icon-btn", innerHTML: ICON_TRASH, ariaLabel: "Treu " + n });
       del.dataset.person = n;
-      return el("li", {}, el("span", { className: "who", textContent: n, title: n }), toggles, del, prefs);
+      return el("li", {}, el("span", { className: "who", textContent: n, title: n }), sex, year, toggles, del, prefs);
     }));
   }
 
@@ -692,7 +761,7 @@
     if (state.people.some((n) => n.toLowerCase() === name.toLowerCase())) { toast(`${name} ja hi és`, true); return; }
     state.people.push(name);
     state.groups[POOL].push(name);
-    state.info[name] = { carnets: "", prefs: "" };
+    state.info[name] = { carnets: "", prefs: "", sex: "", year: null };
     input.value = "";
     commit();
     toast(`${name} afegit a «Sense grup»`);
@@ -719,6 +788,14 @@
   });
 
   $("#people-list").addEventListener("change", (e) => {
+    const field = e.target.closest("select.sex, input.year");
+    if (field) {
+      const info = state.info[field.dataset.who];
+      if (field.matches(".sex")) info.sex = cleanSex(field.value);
+      else info.year = cleanYear(field.value);
+      save();
+      return;
+    }
     const input = e.target.closest("input.prefs");
     if (!input) return;
     state.info[input.dataset.who].prefs = input.value.trim();
@@ -742,7 +819,8 @@
     for (const g of GROUPS) {
       const m = state.groups[g.id];
       lines.push(`*${g.id}* (${m.length}/${g.cap})`);
-      lines.push(m.length ? m.join(", ") : "—");
+      const sorted = [...m].sort(bySexThenAge);
+      lines.push(sorted.length ? sorted.join(", ") : "—");
       for (const r of byGroup.get(g.id) || []) lines.push(`⚠ ${r.a} i ${r.b} no poden anar junts`);
       lines.push("");
     }
@@ -769,7 +847,7 @@
       p: state.people,
       g: Object.fromEntries(GROUPS.map((g) => [g.id, state.groups[g.id].map((n) => idx.get(n))])),
       r: state.rules.map((r) => (r.note ? [idx.get(r.a), idx.get(r.b), r.note] : [idx.get(r.a), idx.get(r.b)])),
-      i: state.people.map((n) => [state.info[n].carnets, state.info[n].prefs]),
+      i: state.people.map((n) => [state.info[n].carnets, state.info[n].prefs, state.info[n].sex, state.info[n].year]),
     };
     return location.origin + location.pathname + "#d=" + toBase64Url(JSON.stringify(data));
   }
@@ -781,7 +859,10 @@
       const p = d.p;
       const groups = Object.fromEntries(Object.entries(d.g || {}).map(([k, l]) => [k, l.map((i) => p[i])]));
       const rules = (d.r || []).map(([a, b, note]) => (note ? { a: p[a], b: p[b], note } : { a: p[a], b: p[b] }));
-      const info = d.i ? Object.fromEntries(p.map((n, i) => [n, { carnets: (d.i[i] || [])[0], prefs: (d.i[i] || [])[1] }])) : undefined;
+      const info = d.i ? Object.fromEntries(p.map((n, i) => {
+        const [carnets, prefs, sex, year] = d.i[i] || [];
+        return [n, sex === undefined ? { carnets, prefs } : { carnets, prefs, sex, year }];
+      })) : undefined;
       const incoming = normalize(migrate({ people: p, groups, rules, info }));
       const hasLocal = state.people.length !== state.groups[POOL].length || state.rules.length;
       if (!hasLocal || confirm("Has obert un enllaç amb una distribució de grups. Vols carregar-la? Substituirà la que tens ara en aquest dispositiu.")) {

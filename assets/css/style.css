@@ -24,6 +24,8 @@
   --dot-c: #f2c12e;
   --dot-m: #3b7dd8;
   --dot-d: #8e5bd0;
+  --young: #fde6ef;
+  --young-line: #f3bfd3;
 
   --font-display: "Bitter", Georgia, serif;
   --font-body: "Mulish", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -224,6 +226,8 @@ p { margin: 0 0 1em; text-wrap: pretty; }
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 @media (max-width: 1180px) { .groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }
+/* Al mòbil, un grup per fila: així hi caben les dues columnes (homes | dones). */
+@media (max-width: 560px) { .groups { grid-template-columns: 1fr; } }
 
 .group {
   background: var(--white); border-radius: 12px; box-shadow: var(--shadow);
@@ -282,7 +286,11 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .req--bad { background: var(--coral); color: var(--white); }
 .req .dot { box-shadow: 0 0 0 1px rgb(255 255 255 / 70%); }
 
-.group .dropzone { flex: 1; padding: 6px; min-height: 44px; }
+.group .dropzone { flex: 1; padding: 6px; min-height: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-content: start; }
+.group .dropzone:empty { display: flex; }
+.col { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.col--d { align-items: flex-end; }
+.col--x { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
 
 .group--conflict { border-color: var(--red); box-shadow: 0 8px 24px rgb(198 47 47 / 18%); }
 .group--conflict .meter span { background: var(--red); }
@@ -458,3 +466,12 @@ body.is-picking .group .dropzone { outline-color: var(--cream); }
 body.is-picking .group:hover .dropzone { background: var(--cream-soft); }
 .group--blocked { border-color: var(--red); border-style: dashed; }
 .group--blocked .dropzone { background: var(--red-soft); }
+
+/* Monitors nascuts el 2008: rosa pastel */
+.chip--young { background: var(--young); border-color: var(--young-line); }
+.chip--young:hover { border-color: #e79bba; }
+
+/* Sexe i any al diàleg de monitors */
+.people-list .sex { width: 52px; min-height: 32px; padding: 2px 4px; font-weight: 800; }
+.people-list .year { width: 70px; min-height: 32px; padding: 2px 6px; font-weight: 700; border: 1.5px solid var(--line); border-radius: var(--radius-sm); }
+.swatch-young { display: inline-block; width: 14px; height: 10px; border-radius: 999px; background: var(--young); border: 1px solid var(--young-line); }

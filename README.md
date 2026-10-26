@@ -4,6 +4,7 @@ Eina web (mòbil i ordinador) per repartir els monitors de l'Esplai Cepitu als g
 PETITS (6), MITJANS (6), GRANS (7), K1 (7), K2 (7) i RUTA (6).
 
 - Arrossega les targetes dels monitors als grups (al mòbil, mantén premut i arrossega). També es pot tocar un monitor i després el grup on va.
+- **Ordre als grups**: homes a l'esquerra i dones a la dreta, del més gran al més petit. Els nuvatus (nascuts el 2008) surten en rosa.
 - **Carnets**: punt groc = conduir, blau = monitor, lila = director. Es poden editar (i les preferències de cada monitor) a «Monitors».
 - **Restriccions**: parelles que no poden anar juntes. Si coincideixen al mateix grup, es marquen en vermell.
 - **Casa / fora casa**: PETITS, MITJANS i GRANS són de casa; K1, K2 i RUTA de fora. Cada grup de casa necessita 1 carnet de conduir i n’hi ha d’haver un de director en algun grup de casa; cada grup de fora necessita 3 de conduir i 3 de monitor, i K1 i K2 un de director. Els grups mostren què els falta.
