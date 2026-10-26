@@ -763,8 +763,13 @@
       + state.placeRules.filter((r) => r.who === n).length;
     pending.sort((a, b) => carnetWeight(b) + rulesOf(b) * 2 - (carnetWeight(a) + rulesOf(a) * 2));
 
+    // Proporció de nois i noies a tota la llista, per intentar que cada grup s'hi assembli.
+    const sexes = state.people.map(sexOf).filter(Boolean);
+    const share = (sex) => sexes.filter((x) => x === sex).length / (sexes.length || 1);
+
     const left = [];
     for (const name of pending) {
+      const sex = sexOf(name);
       const options = GROUPS
         .filter((g) => state.groups[g.id].length < g.cap && !problems(name, g.id).length)
         .map((g) => {
@@ -774,7 +779,10 @@
           const needed = SKILLS.reduce((sum, k) => sum + deficit(g.id, k.key), 0);
           const free = g.cap - state.groups[g.id].length;
           const room = helps ? free : free - needed;
-          return { g, score: helps * 100 + room + Math.random() * 0.5 };
+          // Quants nois (o noies) de més hi hauria respecte del repartiment equilibrat.
+          const members = state.groups[g.id];
+          const excess = sex ? members.filter((m) => sexOf(m) === sex).length + 1 - (members.length + 1) * share(sex) : 0;
+          return { g, score: helps * 100 + room - Math.max(0, excess) * 4 + Math.random() * 0.5 };
         })
         .sort((a, b) => b.score - a.score);
       if (options.length) move(name, options[0].g.id);
