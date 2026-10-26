@@ -517,3 +517,28 @@ body.is-picking .group:hover .dropzone { background: var(--cream-soft); }
 }
 .carnet .tag { opacity: .35; }
 .carnet[aria-pressed="true"] .tag { opacity: 1; }
+
+/* ---------- Fitxa del monitor triat ---------- */
+
+.picked {
+  position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 1500;
+  transform: translateX(-50%); width: min(100% - 24px, 560px);
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--white); color: var(--ink);
+  border: 2px solid var(--coral); border-radius: var(--radius);
+  box-shadow: var(--shadow-lg); padding: 12px 14px;
+}
+.picked[hidden] { display: none; }
+.picked__body { flex: 1; min-width: 0; }
+.picked p { margin: 0; }
+.picked__name { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: var(--green-900); }
+.picked__meta { font-size: .82rem; font-weight: 700; color: var(--ink-soft); }
+.picked__meta:empty { display: none; }
+.picked__prefs { margin-top: 4px !important; font-size: .92rem; }
+.picked__close {
+  flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%;
+  background: var(--green-100); color: var(--green-900);
+  font-size: 1.3rem; line-height: 1; cursor: pointer;
+}
+body.is-picking main { padding-bottom: 130px; }
+body.is-picking .toast { bottom: calc(130px + env(safe-area-inset-bottom)); }

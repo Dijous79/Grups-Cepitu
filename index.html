@@ -100,7 +100,7 @@
   <dialog class="sheet" id="dlg-people" aria-labelledby="dlg-people-title">
     <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
     <h2 id="dlg-people-title">Monitors</h2>
-    <p class="muted small">Toca C, M o D per marcar els carnets (conduir, monitor, director), R si ha fet ruta i T si és tresorer/a. Les preferències de moment només es guarden.</p>
+    <p class="muted small">Toca C, M o D per marcar els carnets (conduir, monitor, director), R si ha fet ruta i T si és tresorer/a. Les preferències surten a baix quan toques un monitor.</p>
     <form class="add-form" id="add-form">
       <input id="add-name" type="text" maxlength="24" placeholder="Nom del monitor" aria-label="Nom del monitor" required>
       <button class="btn btn--sm btn--green" type="submit">Afegeix</button>
@@ -108,6 +108,15 @@
     <ul class="people-list" id="people-list"></ul>
     <button class="link-btn" type="button" id="btn-defaults">Restaura la llista original de monitors</button>
   </dialog>
+
+  <aside class="picked" id="picked" aria-live="polite" hidden>
+    <div class="picked__body">
+      <p class="picked__name" id="picked-name"></p>
+      <p class="picked__meta" id="picked-meta"></p>
+      <p class="picked__prefs" id="picked-prefs"></p>
+    </div>
+    <button class="picked__close" type="button" id="picked-close" aria-label="Deixa de triar">×</button>
+  </aside>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>

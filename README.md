@@ -3,7 +3,7 @@
 Eina web (mòbil i ordinador) per repartir els monitors de l'Esplai Cepitu als grups de colònies d'estiu:
 PETITS (6), MITJANS (6), GRANS (7), K1 (7), K2 (7) i RUTA (6).
 
-- Arrossega les targetes dels monitors als grups (al mòbil, mantén premut i arrossega). També es pot tocar un monitor i després el grup on va.
+- Arrossega les targetes dels monitors als grups (al mòbil, mantén premut i arrossega). També es pot tocar un monitor i després el grup on va; en tocar-lo surten a baix els seus carnets i preferències.
 - **Ordre als grups**: homes a l'esquerra i dones a la dreta, del més gran al més petit. Els nuvatus (nascuts el 2008) surten en rosa.
 - **Carnets**: punt groc = conduir, blau = monitor, lila = director. Es poden editar (i les preferències de cada monitor) a «Monitors».
 - **Restriccions**: parelles que no poden anar juntes i on pot (o no pot) anar cada monitor (un grup concret, casa o fora). Si es trenquen, es marquen en vermell.
