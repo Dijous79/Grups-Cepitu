@@ -78,7 +78,7 @@
     "Max": ["h", 2006], "T. Forre": ["h", 2006], "Judit": ["d", 2006], "Vicen": ["h", 2007],
     "Ton": ["h", 2007], "Bellau": ["h", 2007], "Erica": ["d", 2007], "MartinaBo": ["d", 2007],
     "Pauri": ["h", 2008], "Lucas": ["h", 2008], "Anglarill": ["d", 2008], "MartinaFo": ["d", 2008],
-    "Dani": ["d", 2008], "Herruzo": ["d", 2008],
+    "Dani": ["d", 2008], "Herruzo": ["d", 2008], "AinaCo": ["d", 2007],
   };
   const YOUNGEST = 2008; // els d'aquest any es pinten de rosa
   const CARNETS = [
@@ -145,9 +145,9 @@
         ? {
           carnets: cleanCarnets(saved.carnets),
           prefs: String(saved.prefs || ""),
-          // Dades desades abans que existissin aquests camps: es completen amb les per defecte.
-          sex: "sex" in saved ? cleanSex(saved.sex) : def.sex,
-          year: "year" in saved ? cleanYear(saved.year) : def.year,
+          // Si el sexe o l'any desats són buits (dades antigues), es completen amb els per defecte.
+          sex: cleanSex(saved.sex) || def.sex,
+          year: cleanYear(saved.year) || def.year,
         }
         : def;
     }
