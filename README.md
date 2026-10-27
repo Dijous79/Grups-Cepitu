@@ -10,4 +10,6 @@ PETITS (6), MITJANS (6), GRANS (7), K1 (7), K2 (7) i RUTA (6).
 - **Casa / fora casa**: PETITS, MITJANS i GRANS són de casa; K1, K2 i RUTA de fora. Cada grup de casa necessita 1 carnet de conduir i n’hi ha d’haver un de director en algun grup de casa; cada grup de fora necessita 3 de conduir i 3 de monitor, i K1 i K2 un de director. A RUTA hi ha d'haver algú que ja hagi fet ruta (R) i en algun grup de casa un tresorer/a (T); aquesta informació no es pinta a les targetes, només als comptadors. Els grups mostren què els falta.
 - **Random**: col·loca automàticament els monitors sense grup respectant capacitats, restriccions i carnets mínims.
 
+- **Penjats**: penja la teva distribució (amb la paraula clau de l'esplai) perquè la vegi tothom, mira les dels altres i carrega-les. Es guarden a Supabase; la base de dades es crea amb `supabase.sql`.
+
 La distribució es desa al navegador (localStorage). Web estàtica, sense dependències.
