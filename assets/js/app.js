@@ -130,6 +130,7 @@
   let state = load() || normalize(freshState(DEFAULT_PEOPLE,
     DEFAULT_RULES.map(([a, b]) => ({ a, b })), {}, DEFAULT_PLACE_RULES.map((r) => ({ ...r }))));
   let selected = null; // monitor triat amb un toc, pendent de tocar-ne el grup
+  let preview = null; // { mine, title } mentre es mira una proposta penjada
 
   function freshState(people, rules = [], info = {}, placeRules = []) {
     const groups = { [POOL]: [...people] };
@@ -240,6 +241,7 @@
   }
 
   function save() {
+    if (preview) return; // mirant una proposta penjada: la distribució pròpia no es toca
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* sense emmagatzematge */ }
   }
 
@@ -581,7 +583,7 @@
 
   document.addEventListener("pointerdown", (e) => {
     const node = e.target.closest(".chip");
-    if (!node || e.button !== 0 || node.classList.contains("chip--ghost")) return;
+    if (preview || !node || e.button !== 0 || node.classList.contains("chip--ghost")) return;
     drag = {
       name: node.dataset.name, node, type: e.pointerType,
       x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY,
@@ -721,7 +723,7 @@
   }
 
   document.addEventListener("click", (e) => {
-    if (Date.now() < suppressClickUntil) return;
+    if (preview || Date.now() < suppressClickUntil) return;
     if (e.target.closest("dialog, .toolbar, .picked")) return;
     const node = e.target.closest(".chip");
     const holder = e.target.closest(".group, .pool");
@@ -1019,13 +1021,13 @@
   // només deixa llegir les propostes i cridar les funcions de penjar i esborrar.
   const SUPABASE_URL = "https://ubwerdsutkeqkdwewzok.supabase.co";
   const SUPABASE_KEY = "sb_publishable_YnPOYps5cNlmG8ALC3caHw_pme6ORcn";
-  const SHARED_KEY = "cepitu-penjats"; // nom, paraula clau i tokens per esborrar les pròpies
+  const SHARED_KEY = "cepitu-penjats"; // tokens per esborrar les propostes pròpies
 
   const dlgShared = $("#dlg-shared");
   let sharedList = [];
 
   function sharedPrefs() {
-    try { return { name: "", key: "", tokens: {}, ...JSON.parse(localStorage.getItem(SHARED_KEY)) }; } catch { return { name: "", key: "", tokens: {} }; }
+    try { return { tokens: {}, ...JSON.parse(localStorage.getItem(SHARED_KEY)) }; } catch { return { tokens: {} }; }
   }
   function saveSharedPrefs(p) {
     try { localStorage.setItem(SHARED_KEY, JSON.stringify(p)); } catch { /* sense emmagatzematge */ }
@@ -1043,9 +1045,6 @@
   }
 
   $("#btn-shared").addEventListener("click", () => {
-    const prefs = sharedPrefs();
-    $("#share-name").value = prefs.name;
-    $("#share-key").value = prefs.key;
     dlgShared.showModal();
     loadShared();
   });
@@ -1055,7 +1054,7 @@
     const list = $("#shared-list");
     list.replaceChildren(el("li", { className: "empty", textContent: "Carregant…" }));
     try {
-      sharedList = await api("propostes?select=id,autor,dades,creat&order=creat.desc&limit=100");
+      sharedList = await api("propostes?select=id,titol,dades,creat&order=creat.desc&limit=100");
       renderShared();
     } catch {
       list.replaceChildren(el("li", { className: "empty", textContent: "No s'han pogut carregar les propostes. Torna-ho a provar." }));
@@ -1078,7 +1077,7 @@
         const members = groups[g.id] || [];
         return el("li", {}, el("strong", { textContent: `${g.id} (${members.length}) ` }), members.join(", ") || "—");
       }));
-      const load = el("button", { type: "button", className: "btn btn--sm btn--line", textContent: "Carrega-la" });
+      const load = el("button", { type: "button", className: "btn btn--sm btn--line", textContent: "Mira-la" });
       load.dataset.load = p.id;
       const actions = el("div", { className: "shared-actions" }, load);
       if (tokens[p.id]) {
@@ -1089,7 +1088,7 @@
       return el("li", {},
         el("details", {},
           el("summary", {},
-            el("span", { className: "names", textContent: p.autor }),
+            el("span", { className: "names", textContent: p.titol }),
             el("span", { className: "meta", textContent: ` · ${when} · ${placed}/${people.length} amb grup` })),
           detail, actions));
     }));
@@ -1097,20 +1096,20 @@
 
   $("#share-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const name = $("#share-name").value.trim();
-    const key = $("#share-key").value;
-    if (!name) return;
+    const title = $("#share-title").value.trim();
+    if (!title) return;
     const btn = e.submitter || $("#share-form button");
     btn.disabled = true;
     try {
-      const [row] = await api("rpc/penja_proposta", { p_autor: name, p_dades: state, p_clau: key });
+      const [row] = await api("rpc/penja_proposta", { p_titol: title, p_dades: state });
       const prefs = sharedPrefs();
       prefs.tokens[row.out_id] = row.out_token;
-      saveSharedPrefs({ ...prefs, name, key });
+      saveSharedPrefs(prefs);
+      $("#share-title").value = "";
       toast("Grups penjats");
       loadShared();
-    } catch (err) {
-      toast(/clau/i.test(err.message) ? "La paraula clau no és correcta" : "No s'han pogut penjar els grups", true);
+    } catch {
+      toast("No s'han pogut penjar els grups", true);
     } finally {
       btn.disabled = false;
     }
@@ -1120,12 +1119,7 @@
     const load = e.target.closest("[data-load]");
     if (load) {
       const p = sharedList.find((x) => x.id === load.dataset.load);
-      if (!p || !confirm(`Es substituirà la teva distribució (grups, monitors i restriccions) per la de ${p.autor}. Continuar?`)) return;
-      state = upgrade(normalize(migrate(structuredClone(p.dades))));
-      selected = null;
-      commit();
-      dlgShared.close();
-      toast(`Carregats els grups de ${p.autor}`);
+      if (p) startPreview(p);
       return;
     }
     const del = e.target.closest("[data-del]");
@@ -1141,6 +1135,38 @@
         toast("No s'ha pogut esborrar", true);
       }
     }
+  });
+
+  // Mirar una proposta: es pinta en lloc de la pròpia, que queda apartada i no es desa res.
+  function startPreview(p) {
+    preview = { mine: preview ? preview.mine : state, title: p.titol };
+    state = upgrade(normalize(migrate(structuredClone(p.dades))));
+    selected = null;
+    dlgShared.close();
+    showPreview();
+  }
+
+  function endPreview(keep) {
+    if (!preview) return;
+    if (!keep) state = preview.mine;
+    preview = null;
+    showPreview();
+  }
+
+  function showPreview() {
+    document.body.classList.toggle("is-preview", !!preview);
+    $("#preview-bar").hidden = !preview;
+    if (preview) $("#preview-title").textContent = "«" + preview.title + "»";
+    commit();
+    window.scrollTo(0, 0);
+  }
+
+  $("#btn-preview-back").addEventListener("click", () => endPreview(false));
+  $("#btn-preview-keep").addEventListener("click", () => {
+    if (!confirm(`La teva distribució se substituirà per «${preview.title}». Continuar?`)) return;
+    const title = preview.title;
+    endPreview(true);
+    toast(`Ara tens els grups de «${title}»`);
   });
 
   /* ---------- Avisos ---------- */
