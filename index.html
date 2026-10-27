@@ -41,6 +41,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></svg>
         Monitors
       </button>
+      <button class="btn btn--sm btn--line" type="button" id="btn-shared">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H7z"/><path d="M12 15V10M9.5 12.5 12 10l2.5 2.5"/></svg>
+        Penjats
+      </button>
       <button class="btn btn--sm btn--line" type="button" id="btn-reset">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>
         Buida
@@ -107,6 +111,22 @@
     </form>
     <ul class="people-list" id="people-list"></ul>
     <button class="link-btn" type="button" id="btn-defaults">Restaura la llista original de monitors</button>
+  </dialog>
+
+  <dialog class="sheet" id="dlg-shared" aria-labelledby="dlg-shared-title">
+    <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
+    <h2 id="dlg-shared-title">Grups penjats</h2>
+    <p class="muted small">Penja la teva distribució perquè la vegi tothom, o mira la dels altres.</p>
+    <form class="rule-form share-form" id="share-form">
+      <input id="share-name" type="text" maxlength="40" placeholder="El teu nom" aria-label="El teu nom" autocomplete="name" required>
+      <input id="share-key" type="password" placeholder="Paraula clau de l'esplai" aria-label="Paraula clau de l'esplai" required>
+      <button class="btn btn--sm btn--green" type="submit">Penja els meus grups</button>
+    </form>
+    <div class="shared-head">
+      <h3 class="sheet__sub">Propostes</h3>
+      <button class="link-btn" type="button" id="btn-shared-reload">Actualitza</button>
+    </div>
+    <ul class="rule-list shared-list" id="shared-list"></ul>
   </dialog>
 
   <aside class="picked" id="picked" aria-live="polite" hidden>
