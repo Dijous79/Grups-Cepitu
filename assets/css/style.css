@@ -424,11 +424,7 @@ select:focus, input[type="text"]:focus { border-color: var(--green-500); outline
 .icon-btn:hover { background: var(--red-soft); color: var(--red); }
 .icon-btn svg { width: 18px; height: 18px; }
 
-.share-form { grid-template-columns: 1fr 1fr; }
-input[type="password"] {
-  width: 100%; min-height: 44px; padding: 8px 12px;
-  border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--white);
-}
+.share-form { grid-template-columns: 1fr; }
 .shared-head { display: flex; align-items: baseline; justify-content: space-between; }
 .shared-head .link-btn { margin: 0; }
 .shared-list li { display: block; padding: 10px 12px; }
@@ -436,7 +432,19 @@ input[type="password"] {
 .shared-groups { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; font-size: .86rem; }
 .shared-groups li { display: block; border: 0; padding: 0; }
 .shared-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-@media (max-width: 480px) { .share-form { grid-template-columns: 1fr; } }
+
+/* Mirant una proposta penjada: sense eines ni edició, amb la barra per tornar. */
+.preview-bar {
+  position: sticky; top: 58px; z-index: 40;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  margin: 10px 0; padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--cream-soft); border: 2px solid var(--cream); box-shadow: var(--shadow);
+}
+.preview-bar[hidden] { display: none; }
+.preview-bar p { margin: 0; font-size: .9rem; }
+.preview-bar__actions { display: flex; gap: 8px; }
+body.is-preview .toolbar, body.is-preview .legend .hint { display: none; }
+body.is-preview .chip { cursor: default; }
 
 .add-form { display: flex; gap: 8px; margin-bottom: 14px; }
 .people-list li { padding: 6px 6px 6px 12px; font-weight: 700; flex-wrap: wrap; gap: 6px; }

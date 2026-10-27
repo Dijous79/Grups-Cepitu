@@ -28,6 +28,14 @@
   </header>
 
   <main class="wrap" id="main">
+    <div class="preview-bar" id="preview-bar" hidden>
+      <p>Estàs mirant <strong id="preview-title"></strong>. La teva distribució està guardada.</p>
+      <div class="preview-bar__actions">
+        <button class="btn btn--sm btn--line" type="button" id="btn-preview-back">Torna a la meva</button>
+        <button class="btn btn--sm" type="button" id="btn-preview-keep">Fes-la meva</button>
+      </div>
+    </div>
+
     <div class="toolbar" role="toolbar" aria-label="Accions">
       <button class="btn btn--sm" type="button" id="btn-rules">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
@@ -116,10 +124,9 @@
   <dialog class="sheet" id="dlg-shared" aria-labelledby="dlg-shared-title">
     <form method="dialog" class="sheet__close"><button aria-label="Tanca">×</button></form>
     <h2 id="dlg-shared-title">Grups penjats</h2>
-    <p class="muted small">Penja la teva distribució perquè la vegi tothom, o mira la dels altres.</p>
+    <p class="muted small">Penja la teva distribució perquè la vegi tothom, o mira la dels altres sense perdre la teva.</p>
     <form class="rule-form share-form" id="share-form">
-      <input id="share-name" type="text" maxlength="40" placeholder="El teu nom" aria-label="El teu nom" autocomplete="name" required>
-      <input id="share-key" type="password" placeholder="Paraula clau de l'esplai" aria-label="Paraula clau de l'esplai" required>
+      <input id="share-title" type="text" maxlength="60" placeholder="Títol (p. ex. Riki a K2, Muli a K1)" aria-label="Títol dels grups" required>
       <button class="btn btn--sm btn--green" type="submit">Penja els meus grups</button>
     </form>
     <div class="shared-head">
