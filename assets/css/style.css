@@ -425,10 +425,22 @@ select:focus, input[type="text"]:focus { border-color: var(--green-500); outline
 .icon-btn svg { width: 18px; height: 18px; }
 
 .share-form { grid-template-columns: 1fr; }
-.shared-head { display: flex; align-items: baseline; justify-content: space-between; }
+.shared-head { display: flex; align-items: center; gap: 10px; }
+.shared-head h3 { margin-right: auto; }
+.shared-head select { width: auto; min-height: 36px; padding: 4px 8px; font-size: .86rem; }
 .shared-head .link-btn { margin: 0; }
-.shared-list li { display: block; padding: 10px 12px; }
+.shared-list li { align-items: flex-start; padding: 8px 12px 8px 8px; }
+.shared-list details { flex: 1; min-width: 0; padding-top: 4px; }
 .shared-list summary { cursor: pointer; }
+.shared-list li > .vote { flex: none; display: grid; gap: 2px; }
+.vote__item { display: flex; align-items: center; gap: 4px; }
+.vote__btn {
+  width: 32px; height: 28px; border-radius: 8px; border: 1.5px solid var(--line); cursor: pointer;
+  background: var(--white); color: var(--ink-soft); font-size: .8rem; line-height: 1;
+}
+.vote__btn[data-vote="1"][aria-pressed="true"] { background: var(--green-500); border-color: var(--green-500); color: var(--white); }
+.vote__btn[data-vote="-1"][aria-pressed="true"] { background: var(--red); border-color: var(--red); color: var(--white); }
+.vote__count { min-width: 18px; font-weight: 800; font-size: .86rem; color: var(--green-900); }
 .shared-groups { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; font-size: .86rem; }
 .shared-groups li { display: block; border: 0; padding: 0; }
 .shared-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

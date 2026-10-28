@@ -1018,16 +1018,20 @@
   /* ---------- Grups penjats (Supabase) ---------- */
 
   // Taula i funcions creades amb supabase.sql. La clau publishable es pot publicar:
-  // només deixa llegir les propostes i cridar les funcions de penjar i esborrar.
+  // només deixa cridar les funcions de llistar, penjar, votar i esborrar.
   const SUPABASE_URL = "https://ubwerdsutkeqkdwewzok.supabase.co";
   const SUPABASE_KEY = "sb_publishable_YnPOYps5cNlmG8ALC3caHw_pme6ORcn";
-  const SHARED_KEY = "cepitu-penjats"; // tokens per esborrar les propostes pròpies
+  const SHARED_KEY = "cepitu-penjats"; // id de votant i tokens per esborrar les propostes pròpies
 
   const dlgShared = $("#dlg-shared");
   let sharedList = [];
 
   function sharedPrefs() {
-    try { return { tokens: {}, ...JSON.parse(localStorage.getItem(SHARED_KEY)) }; } catch { return { tokens: {} }; }
+    let p;
+    try { p = { tokens: {}, ...JSON.parse(localStorage.getItem(SHARED_KEY)) }; } catch { p = { tokens: {} }; }
+    // Identificador anònim d'aquest navegador, perquè cadascú només tingui un vot per proposta.
+    if (!p.voter) { p.voter = crypto.randomUUID(); saveSharedPrefs(p); }
+    return p;
   }
   function saveSharedPrefs(p) {
     try { localStorage.setItem(SHARED_KEY, JSON.stringify(p)); } catch { /* sense emmagatzematge */ }
@@ -1049,12 +1053,13 @@
     loadShared();
   });
   $("#btn-shared-reload").addEventListener("click", loadShared);
+  $("#shared-sort").addEventListener("change", renderShared);
 
   async function loadShared() {
     const list = $("#shared-list");
     list.replaceChildren(el("li", { className: "empty", textContent: "Carregant…" }));
     try {
-      sharedList = await api("propostes?select=id,titol,dades,creat&order=creat.desc&limit=100");
+      sharedList = await api("rpc/llista_propostes", { p_votant: sharedPrefs().voter });
       renderShared();
     } catch {
       list.replaceChildren(el("li", { className: "empty", textContent: "No s'han pogut carregar les propostes. Torna-ho a provar." }));
@@ -1068,7 +1073,12 @@
       return;
     }
     const { tokens } = sharedPrefs();
-    list.replaceChildren(...sharedList.map((p) => {
+    const score = (p) => p.positius - p.negatius;
+    const newer = (a, b) => b.creat.localeCompare(a.creat);
+    const sort = $("#shared-sort").value;
+    const sorted = [...sharedList].sort((a, b) =>
+      sort === "new" ? newer(a, b) : (sort === "top" ? score(b) - score(a) : score(a) - score(b)) || newer(a, b));
+    list.replaceChildren(...sorted.map((p) => {
       const groups = (p.dades && p.dades.groups) || {};
       const people = (p.dades && p.dades.people) || [];
       const placed = people.length - (groups[POOL] || []).length;
@@ -1085,7 +1095,17 @@
         del.dataset.del = p.id;
         actions.append(del);
       }
+      const vote = (value, label, symbol, count) => {
+        const b = el("button", { type: "button", className: "vote__btn", ariaLabel: label, textContent: symbol });
+        b.dataset.vote = value;
+        b.dataset.id = p.id;
+        b.setAttribute("aria-pressed", p.meu === value);
+        return el("span", { className: "vote__item" }, b, el("span", { className: "vote__count", textContent: count }));
+      };
       return el("li", {},
+        el("div", { className: "vote", ariaLabel: `${p.positius} a favor, ${p.negatius} en contra` },
+          vote(1, "Vot a favor", "▲", p.positius),
+          vote(-1, "Vot en contra", "▼", p.negatius)),
         el("details", {},
           el("summary", {},
             el("span", { className: "names", textContent: p.titol }),
@@ -1116,6 +1136,28 @@
   });
 
   $("#shared-list").addEventListener("click", async (e) => {
+    const vote = e.target.closest("[data-vote]");
+    if (vote) {
+      const p = sharedList.find((x) => x.id === vote.dataset.id);
+      if (!p) return;
+      // Tornar a tocar el mateix vot el treu.
+      const value = p.meu === Number(vote.dataset.vote) ? 0 : Number(vote.dataset.vote);
+      const before = { ...p };
+      if (p.meu === 1) p.positius--;
+      if (p.meu === -1) p.negatius--;
+      if (value === 1) p.positius++;
+      if (value === -1) p.negatius++;
+      p.meu = value;
+      renderShared();
+      try {
+        await api("rpc/vota_proposta", { p_id: p.id, p_votant: sharedPrefs().voter, p_valor: value });
+      } catch {
+        Object.assign(p, before);
+        renderShared();
+        toast("No s'ha pogut votar", true);
+      }
+      return;
+    }
     const load = e.target.closest("[data-load]");
     if (load) {
       const p = sharedList.find((x) => x.id === load.dataset.load);
