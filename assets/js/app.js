@@ -41,7 +41,7 @@
     "Tondes": ["mc", "Casa"],
     "Bru": ["c", "Casa"],
     "Eli": ["mc", "Fora casa"],
-    "Riki": ["mcd", "K2"],
+    "Riki": ["mcd", "K2, NO PRECOLONIA"],
     "Ro": ["m"],
     "Q. Geis": ["mc", "No Inyi, Ruta o petits, no K1"],
     "Muli": ["md", "K1"],
@@ -112,7 +112,7 @@
   ];
 
   // Puja-ho quan calgui retocar dades ja desades (vegeu upgrade()).
-  const DATA_VERSION = 3;
+  const DATA_VERSION = 4;
 
   const STORAGE_KEY = "cepitu-grups-v1";
   const POOL = "pool";
@@ -210,6 +210,10 @@
         const exists = s.placeRules.some((x) => x.who === r.who && x.mode === r.mode && x.target === r.target);
         if (!exists && s.info[r.who]) s.placeRules.push({ ...r });
       }
+    }
+    if (s.version < 4) {
+      const riki = s.info.Riki;
+      if (riki && !/precol/i.test(riki.prefs)) riki.prefs = [riki.prefs, "NO PRECOLONIA"].filter(Boolean).join(", ");
     }
     s.version = DATA_VERSION;
     return s;
