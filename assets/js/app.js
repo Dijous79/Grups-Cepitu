@@ -37,7 +37,7 @@
   const DEFAULT_INFO = {
     "MC": ["c"],
     "Chali": ["mc"],
-    "Inyi": ["dcm", "No fora casa, no petits, no Q. Geis"],
+    "Inyi": ["dcm", "No fora casa, petits, no Q. Geis"],
     "Tondes": ["mc", "Casa"],
     "Bru": ["c", "Casa"],
     "Eli": ["mc", "Fora casa"],
@@ -112,7 +112,7 @@
   ];
 
   // Puja-ho quan calgui retocar dades ja desades (vegeu upgrade()).
-  const DATA_VERSION = 4;
+  const DATA_VERSION = 5;
 
   const STORAGE_KEY = "cepitu-grups-v1";
   const POOL = "pool";
@@ -214,6 +214,10 @@
     if (s.version < 4) {
       const riki = s.info.Riki;
       if (riki && !/precol/i.test(riki.prefs)) riki.prefs = [riki.prefs, "NO PRECOLONIA"].filter(Boolean).join(", ");
+    }
+    if (s.version < 5) {
+      const inyi = s.info.Inyi;
+      if (inyi) inyi.prefs = inyi.prefs.replace(/\bno petits\b/i, "petits");
     }
     s.version = DATA_VERSION;
     return s;
