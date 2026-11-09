@@ -107,12 +107,13 @@
     { who: "Biel", mode: "only", target: "casa" },
     { who: "Santi", mode: "not", target: "K2" },
     { who: "Vicen", mode: "not", target: "K2" },
+    { who: "Q. Geis", mode: "only", target: "GRANS" },
     // Els nuvatus (2008) no poden anar a RUTA.
     ...["Pauri", "Lucas", "Anglarill", "MartinaFo", "Dani", "Herruzo"].map((who) => ({ who, mode: "not", target: "RUTA" })),
   ];
 
   // Puja-ho quan calgui retocar dades ja desades (vegeu upgrade()).
-  const DATA_VERSION = 5;
+  const DATA_VERSION = 6;
 
   const STORAGE_KEY = "cepitu-grups-v1";
   const POOL = "pool";
@@ -218,6 +219,11 @@
     if (s.version < 5) {
       const inyi = s.info.Inyi;
       if (inyi) inyi.prefs = inyi.prefs.replace(/\bno petits\b/i, "petits");
+    }
+    if (s.version < 6) {
+      const r = { who: "Q. Geis", mode: "only", target: "GRANS" };
+      const exists = s.placeRules.some((x) => x.who === r.who && x.mode === r.mode && x.target === r.target);
+      if (!exists && s.info[r.who]) s.placeRules.push(r);
     }
     s.version = DATA_VERSION;
     return s;
